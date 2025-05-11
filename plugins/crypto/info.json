@@ -1,0 +1,8 @@
+{
+  "identifier": "crypto",
+  "name": "Crypto",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides AES-GCM key generation and encryption/decryption API endpoints",
+  "version": "0.1.0"
+} 

@@ -1,0 +1,8 @@
+{
+  "identifier": "terminal_cli",
+  "name": "Terminal CLI",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides a suite of CLI commands: PDF conversion, anchors listing, package updates, docs generation, and self/git updates.",
+  "version": "0.1.0"
+} 

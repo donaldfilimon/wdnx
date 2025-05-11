@@ -1,0 +1,8 @@
+{
+  "identifier": "reactive_web",
+  "name": "Reactive Web",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides endpoints for dynamic website content generation",
+  "version": "0.1.0"
+} 

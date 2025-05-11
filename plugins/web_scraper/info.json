@@ -1,0 +1,8 @@
+{
+  "identifier": "web_scraper",
+  "name": "Web Scraper",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides an endpoint to scrape web pages via /scrape",
+  "version": "0.1.0"
+} 

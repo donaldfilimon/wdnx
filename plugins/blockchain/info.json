@@ -1,0 +1,8 @@
+{
+  "identifier": "blockchain",
+  "name": "Blockchain",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides view and API endpoints for anchored hashes",
+  "version": "0.1.0"
+} 

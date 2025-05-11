@@ -1,0 +1,37 @@
+site_name: "WDBX Documentation"
+
+nav:
+  - Home: docs/index.md
+  - Quickstart: docs/quickstart.md
+  - API Reference:
+      - WDBX: docs/reference/wdbx_client.md
+      - AsyncWDBX: docs/reference/wdbx_async_client.md
+      - Sharding: docs/reference/wdbx_sharding.md
+      - Utilities: docs/reference/wdbx_utils.md
+  - Lylex API:
+      - LylexDB: docs/reference/lylex_db.md
+      - AsyncLylexDB: docs/reference/lylex_async_db.md
+      - Lylex Model: docs/reference/lylex_model.md
+      - Lylex Agent: docs/reference/lylex_ai.md
+  - Flask Blueprints:
+      - WDBX Blueprint: docs/reference/blueprints/wdbx_api.md
+      - Lylex Blueprint: docs/reference/blueprints/lylex_api.md
+      - Plugin Admin Blueprint: docs/reference/blueprints/plugin_admin.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - "import sys; sys.path.insert(0, '.')"
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc 

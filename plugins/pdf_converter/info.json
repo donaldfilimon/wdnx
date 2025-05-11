@@ -1,0 +1,8 @@
+{
+  "identifier": "pdf_converter",
+  "name": "PDF Converter",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Provides an endpoint to convert PDFs to HTML via /pdf/convert",
+  "version": "0.1.0"
+} 

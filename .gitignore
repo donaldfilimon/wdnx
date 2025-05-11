@@ -1,0 +1,12 @@
+.venv
+
+.ropeproject
+
+**/*.DS_Store
+
+# Local environment variables
+.env
+
+# Uploaded and generated files
+uploads/
+generated_html/

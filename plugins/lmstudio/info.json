@@ -1,0 +1,8 @@
+{
+  "identifier": "lmstudio",
+  "name": "LMStudio Provider",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Endpoints to interact with local LMStudio models",
+  "version": "0.1.0"
+} 

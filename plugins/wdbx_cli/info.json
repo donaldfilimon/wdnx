@@ -1,0 +1,8 @@
+{
+  "identifier": "wdbx_cli",
+  "name": "WDBX CLI",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "CLI commands for WDBX operations",
+  "version": "0.1.0"
+} 

@@ -1,0 +1,8 @@
+{
+  "identifier": "lylex_cli",
+  "name": "Lylex CLI",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "CLI commands for Lylex operations",
+  "version": "0.1.0"
+} 

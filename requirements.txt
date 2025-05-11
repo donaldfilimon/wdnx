@@ -1,0 +1,65 @@
+Flask>=2.2.0
+pydantic>=1.10.0
+prometheus-client>=0.16.0
+python-dotenv>=1.0.0
+# wdbx>=0.1.0
+aiohttp>=3.8.0
+requests>=2.25.1
+transformers>=4.51.3
+
+# Web scraping support
+beautifulsoup4>=4.11.1
+
+# Discord bot
+discord.py>=2.3.0
+
+# PDF table extraction
+pdfplumber>=0.8.0
+
+# GPU acceleration and model optimization
+accelerate>=0.20.3
+onnxruntime-gpu>=1.14.1
+
+# Encryption and blockchain
+cryptography>=40.0.0
+web3>=6.0.0
+
+# Documentation tools
+mkdocs>=1.4
+mkdocs-material>=9.0.8
+mkdocstrings>=0.22.0
+
+# Plugin system support
+flask-plugins>=0.1.0
+
+# Advanced training features
+optuna>=3.0.0
+peft>=0.3.0
+wandb>=0.14.0
+
+# OpenAI embeddings
+openai>=0.27.0
+
+# Vision model support
+torchvision>=0.15.0
+
+# Vector operations support
+numpy>=1.21.0
+
+# Scheduler support
+APScheduler>=3.8.1
+
+# Rate limiting support
+Flask-Limiter>=2.12.0
+
+# Login support
+flask-Login>=0.6.2
+
+# JWT support
+flask-jwt-extended>=4.4.0
+
+# Added requests>=2.0.0
+requests>=2.0.0
+
+# Metrics support
+prometheus-client>=0.16.0 

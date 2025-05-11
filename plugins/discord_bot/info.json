@@ -1,0 +1,8 @@
+{
+  "identifier": "discord_bot",
+  "name": "Discord Bot",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Starts a Discord bot to scrape URLs using the web scraper plugin.",
+  "version": "0.1.0"
+} 

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Anchored Hashes{% endblock %}
+{% block content %}
+<h1>Anchored Hashes</h1>
+{% if anchors %}
+<table class="table table-bordered">
+    <thead>
+        <tr><th>File Path</th><th>Hash</th></tr>
+    </thead>
+    <tbody>
+        {% for entry in anchors %}
+        <tr>
+            <td>{{ entry.file_path }}</td>
+            <td>{{ entry.file_hash }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No anchors found.</p>
+{% endif %}
+<p><a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Home</a></p>
+{% endblock %} 

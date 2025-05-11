@@ -1,0 +1,11 @@
+{
+  "identifier": "strim",
+  "name": "Strim Editor",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Built-in text editor plugin providing a simple editing interface",
+  "version": "0.1.0",
+  "options": {
+    "data_directory": "strim_data"
+  }
+} 

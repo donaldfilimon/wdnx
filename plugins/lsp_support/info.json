@@ -1,0 +1,8 @@
+{
+  "identifier": "lsp_support",
+  "name": "LSP Support",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Endpoints for language server protocol operations",
+  "version": "0.1.0"
+} 

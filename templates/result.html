@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Conversion Result{% endblock %}
+{% block content %}
+<h1>Conversion Result</h1>
+<p><a href="{{ url_for('index') }}" class="btn btn-link">Convert another PDF</a> | <a href="{{ url_for('anchors') }}" class="btn btn-link">View Anchored Hashes</a></p>
+<hr>
+<div>
+    {{ html_content | safe }}
+</div>
+{% endblock %} 

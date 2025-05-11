@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}PDF to HTML Converter{% endblock %}
+{% block content %}
+<h1>PDF to HTML Converter</h1>
+<p><a href="{{ url_for('anchors') }}" class="btn btn-link">View Anchored Hashes</a></p>
+<p><a href="{{ url_for('view_updates') }}" class="btn btn-link">View Outdated Packages</a></p>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flashes">
+      {% for msg in messages %}
+        <li>{{ msg }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+<form method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="pdf_file">Select PDF</label>
+        <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf" class="form-control-file" required>
+    </div>
+    <div class="form-group">
+        <label for="workers">Workers:</label>
+        <input type="number" name="workers" id="workers" class="form-control" min="1" placeholder="CPU count">
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="skip_vision" id="skip_vision">
+        <label class="form-check-label" for="skip_vision">Skip Vision LLM</label>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="extract_tables" id="extract_tables">
+        <label class="form-check-label" for="extract_tables">Extract Tables</label>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="encrypt_html" id="encrypt_html">
+        <label class="form-check-label" for="encrypt_html">Encrypt HTML</label>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="anchor_hash" id="anchor_hash">
+        <label class="form-check-label" for="anchor_hash">Anchor Hash</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Convert</button>
+</form>
+{% endblock %} 

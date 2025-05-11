@@ -1,0 +1,8 @@
+{
+  "identifier": "ollama",
+  "name": "Ollama Provider",
+  "author": "auto-generated",
+  "license": "MIT",
+  "description": "Endpoints to interact with local Ollama LLM",
+  "version": "0.1.0"
+} 
