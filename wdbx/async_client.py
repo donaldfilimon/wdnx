@@ -2,24 +2,20 @@
 async_client.py - Asynchronous WDBX client for the wdbx package.
 """
 
-import asyncio
-import inspect
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
-from functools import wraps
-from contextlib import asynccontextmanager
+from typing import Any, Dict, List, Optional, Tuple
 
 # Underlying WDBX client (ensure the external package providing WDBX is installed)
 from wdbx import WDBX as _WDBXClient
+
 
 class AsyncWDBX:
     """
     Asynchronous interface to the WDBX client.
     """
+
     def __init__(self, vector_dimension: int, enable_plugins: bool = True, **kwargs):
         self._client = _WDBXClient(
-            vector_dimension=vector_dimension,
-            enable_plugins=enable_plugins,
-            **kwargs
+            vector_dimension=vector_dimension, enable_plugins=enable_plugins, **kwargs
         )
 
     async def initialize(self) -> None:
@@ -42,7 +38,9 @@ class AsyncWDBX:
         """Store multiple vectors and metadata in bulk. Returns list of vector IDs."""
         return [await self.store(v, m) for v, m in items]
 
-    async def bulk_search(self, vectors: List[List[float]], limit: int = 10) -> List[List[Dict]]:
+    async def bulk_search(
+        self, vectors: List[List[float]], limit: int = 10
+    ) -> List[List[Dict]]:
         """Search for multiple vectors in bulk. Returns list of result lists."""
         return [await self.search(v, limit) for v in vectors]
 
@@ -100,7 +98,9 @@ class AsyncWDBX:
     async def mitigate_bias(self, text: str) -> str:
         return await self._client.bias_mitigation_async(text)
 
-    async def start_http_server(self, host: str = '127.0.0.1', port: int = 8000) -> None:
+    async def start_http_server(
+        self, host: str = "127.0.0.1", port: int = 8000
+    ) -> None:
         return await self._client.http_server_start_async(host, port)
 
     async def stop_http_server(self) -> None:
@@ -124,7 +124,9 @@ class AsyncWDBX:
     async def list_plugins(self) -> List[Dict]:
         return await self._client.plugin_list_async()
 
-    async def visualize_vectors(self, vectors: List[List[float]], method: str = 'tsne') -> Dict:
+    async def visualize_vectors(
+        self, vectors: List[List[float]], method: str = "tsne"
+    ) -> Dict:
         return await self._client.visualize_vectors_async(vectors, method)
 
     async def set_access_token(self, token: str) -> None:
@@ -174,9 +176,11 @@ class AsyncWDBX:
         queries: List[List[float]],
         keys: List[List[float]],
         values: List[List[float]],
-        num_heads: int
+        num_heads: int,
     ) -> List[List[float]]:
-        return await self._client.multi_head_attention_async(queries, keys, values, num_heads)
+        return await self._client.multi_head_attention_async(
+            queries, keys, values, num_heads
+        )
 
     async def health_check(self) -> Dict[str, Any]:
         return {"ping": await self.ping(), "count": await self.count()}
@@ -194,4 +198,4 @@ def initialize_async_backend(*args, **kwargs) -> AsyncWDBX:
     """
     w = AsyncWDBX(*args, **kwargs)
     await w.initialize()
-    return w 
+    return w

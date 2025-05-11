@@ -1,6 +1,6 @@
 .venv
 
-.ropeproject
+**/*.ropeproject
 
 **/*.DS_Store
 
@@ -10,3 +10,9 @@
 # Uploaded and generated files
 uploads/
 generated_html/
+
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.pyw
+**/*.pyz

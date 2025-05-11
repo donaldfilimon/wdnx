@@ -1,9 +1,11 @@
 """
 sharding.py - Shard management for WDBX cluster using consistent hashing.
 """
+
 import bisect
 import hashlib
 from typing import Dict, List, Set
+
 
 class ShardManager:
     """
@@ -14,6 +16,7 @@ class ShardManager:
         manager = ShardManager(shards)
         node = manager.get_node('some_key')
     """
+
     def __init__(self, nodes: List[str], replicas: int = 100):
         self.replicas = replicas
         self.ring: List[int] = []
@@ -23,7 +26,7 @@ class ShardManager:
         for node in nodes:
             for i in range(replicas):
                 key = f"{node}:{i}"
-                h = int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16)
+                h = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16)
                 self.ring.append(h)
                 self.node_map[h] = node
         self.ring.sort()
@@ -43,7 +46,7 @@ class ShardManager:
         """
         if not self.ring:
             raise ValueError("Shard ring is empty")
-        h = int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16)
+        h = int(hashlib.md5(key.encode("utf-8")).hexdigest(), 16)
         idx = bisect.bisect(self.ring, h)
         n = len(self.ring)
         # iterate over ring to find first healthy node
@@ -55,4 +58,4 @@ class ShardManager:
                 return node
         # if all nodes failed, return first by default
         node_hash = self.ring[idx % n]
-        return self.node_map[node_hash] 
+        return self.node_map[node_hash]

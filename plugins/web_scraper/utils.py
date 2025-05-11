@@ -1,6 +1,7 @@
 import os
 import random
 import time
+
 import requests
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
@@ -12,7 +13,7 @@ retry_strategy = Retry(
     total=int(os.getenv("SCRAPER_RETRIES", "3")),
     backoff_factor=float(os.getenv("SCRAPER_BACKOFF_FACTOR", "0.3")),
     status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=["HEAD", "GET", "OPTIONS"]
+    allowed_methods=["HEAD", "GET", "OPTIONS"],
 )
 adapter = HTTPAdapter(max_retries=retry_strategy)
 session.mount("https://", adapter)
@@ -24,6 +25,7 @@ USER_AGENTS = [
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_4) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
 ]
+
 
 def scrape_url(url: str) -> dict:
     """
@@ -42,16 +44,15 @@ def scrape_url(url: str) -> dict:
 
     # If SCRAPERAPI_KEY is set, route request through ScraperAPI
     api_key = os.getenv("SCRAPERAPI_KEY")
-    target_url = f"http://api.scraperapi.com?api_key={api_key}&url={url}" if api_key else url
+    target_url = (
+        f"http://api.scraperapi.com?api_key={api_key}&url={url}" if api_key else url
+    )
 
     timeout = int(os.getenv("SCRAPER_TIMEOUT", "10"))
     response = session.get(target_url, headers=headers, timeout=timeout)
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    title = soup.title.string.strip() if soup.title and soup.title.string else ''
-    first_p_tag = soup.find('p')
-    first_paragraph = first_p_tag.get_text(strip=True) if first_p_tag else ''
-    return {
-        'title': title,
-        'first_paragraph': first_paragraph
-    } 
+    soup = BeautifulSoup(response.text, "html.parser")
+    title = soup.title.string.strip() if soup.title and soup.title.string else ""
+    first_p_tag = soup.find("p")
+    first_paragraph = first_p_tag.get_text(strip=True) if first_p_tag else ""
+    return {"title": title, "first_paragraph": first_paragraph}

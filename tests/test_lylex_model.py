@@ -1,14 +1,13 @@
-import pytest
-import torch
 import jax
 import jax.numpy as jnp
+import pytest
+import torch
 
 from lylex.model import (
-    TorchEmbeddingModel,
-    init_torch_distributed,
-    wrap_torch_ddp,
     JAXEmbeddingModel,
+    TorchEmbeddingModel,
     jax_distributed,
+    wrap_torch_ddp,
 )
 
 
@@ -19,7 +18,10 @@ def test_torch_embedding_forward():
     y = model(x)
     assert y.shape == (2, output_dim)
 
-@pytest.mark.skipif(not torch.distributed.is_available(), reason="Distributed backend not available")
+
+@pytest.mark.skipif(
+    not torch.distributed.is_available(), reason="Distributed backend not available"
+)
 def test_wrap_ddp_without_init(monkeypatch):
     model = TorchEmbeddingModel(5, 5, 5)
     # Ensure distributed is not initialized
@@ -38,7 +40,9 @@ def test_jax_embedding_forward():
 
 
 def test_jax_pmap():
-    def fn(x): return x * 2
+    def fn(x):
+        return x * 2
+
     pfn = jax_distributed(fn)
     # pmap over devices: input must match number of devices
     ndevices = jax.device_count()
@@ -46,4 +50,4 @@ def test_jax_pmap():
     out = pfn(args)
     assert isinstance(out, jnp.ndarray)
     assert out.shape[0] == ndevices
-    assert all(out[i] == args[i] * 2 for i in range(ndevices)) 
+    assert all(out[i] == args[i] * 2 for i in range(ndevices))

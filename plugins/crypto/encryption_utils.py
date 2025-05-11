@@ -1,5 +1,7 @@
 import os
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 
 def generate_key() -> bytes:
     """
@@ -15,7 +17,7 @@ def encrypt_data(key: bytes, plaintext: bytes) -> dict:
     aesgcm = AESGCM(key)
     nonce = os.urandom(12)
     ciphertext = aesgcm.encrypt(nonce, plaintext, None)
-    return {'nonce': nonce.hex(), 'ciphertext': ciphertext.hex()}
+    return {"nonce": nonce.hex(), "ciphertext": ciphertext.hex()}
 
 
 def decrypt_data(key: bytes, nonce_hex: str, ciphertext_hex: str) -> bytes:
@@ -25,4 +27,4 @@ def decrypt_data(key: bytes, nonce_hex: str, ciphertext_hex: str) -> bytes:
     aesgcm = AESGCM(key)
     nonce = bytes.fromhex(nonce_hex)
     ciphertext = bytes.fromhex(ciphertext_hex)
-    return aesgcm.decrypt(nonce, ciphertext, None) 
+    return aesgcm.decrypt(nonce, ciphertext, None)

@@ -2,15 +2,18 @@
 vision.py - Handler for large vision models (LVMs) using HuggingFace CLIP.
 """
 
+from typing import Dict, List
+
 import torch
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
-from typing import List, Dict
+from transformers import CLIPModel, CLIPProcessor
+
 
 class VisionModelHandler:
     """
     Singleton handler to load and run vision models for image features and zero-shot classification.
     """
+
     _instance = None
 
     def __new__(cls, model_name: str = "openai/clip-vit-base-patch32"):
@@ -19,7 +22,7 @@ class VisionModelHandler:
         return cls._instance
 
     def __init__(self, model_name: str = "openai/clip-vit-base-patch32"):
-        if hasattr(self, '_initialized') and self._initialized:
+        if hasattr(self, "_initialized") and self._initialized:
             return
         self.processor = CLIPProcessor.from_pretrained(model_name)
         self.model = CLIPModel.from_pretrained(model_name)
@@ -39,9 +42,11 @@ class VisionModelHandler:
         """
         Zero-shot classification: returns a mapping label -> probability.
         """
-        inputs = self.processor(text=text_labels, images=image, return_tensors="pt", padding=True)
+        inputs = self.processor(
+            text=text_labels, images=image, return_tensors="pt", padding=True
+        )
         with torch.no_grad():
             outputs = self.model(**inputs)
             logits_per_image = outputs.logits_per_image
             probs = logits_per_image.softmax(dim=1)
-        return {label: float(probs[0, idx]) for idx, label in enumerate(text_labels)} 
+        return {label: float(probs[0, idx]) for idx, label in enumerate(text_labels)}

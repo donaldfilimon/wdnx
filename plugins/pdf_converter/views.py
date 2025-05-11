@@ -1,18 +1,21 @@
-from flask import Blueprint, request, jsonify, send_file
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from flask import Blueprint, jsonify, request, send_file
+
 from plugins.pdf_converter.pdf_to_html import pdf_to_html
 
 pdf_bp = Blueprint("pdf_converter", __name__, url_prefix="/pdf")
 
+
 @pdf_bp.route("/convert", methods=["POST"])
 def convert_pdf():
     """Upload a PDF and return the converted HTML file."""
-    if 'pdf_file' not in request.files:
+    if "pdf_file" not in request.files:
         return jsonify({"error": "No file uploaded."}), 400
-    file = request.files['pdf_file']
+    file = request.files["pdf_file"]
     filename = file.filename
-    if filename == '':
+    if filename == "":
         return jsonify({"error": "Filename is empty."}), 400
     with TemporaryDirectory() as tmpdir:
         upload_path = Path(tmpdir) / filename
@@ -23,4 +26,4 @@ def convert_pdf():
             pdf_to_html(upload_path, html_path)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-        return send_file(html_path, as_attachment=True, download_name=html_filename) 
+        return send_file(html_path, as_attachment=True, download_name=html_filename)

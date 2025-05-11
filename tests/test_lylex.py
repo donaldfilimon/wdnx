@@ -1,5 +1,3 @@
-import pytest
-
 from lylex import tokenize
 
 
@@ -15,4 +13,4 @@ def test_tokenize_empty():
 
 
 def test_tokenize_none():
-    assert tokenize(None) == [] 
+    assert tokenize(None) == []

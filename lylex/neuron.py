@@ -2,11 +2,12 @@
 neuron.py - Wrapper around the NEURON simulation environment.
 """
 
-from neuron import h
-import numpy as np
-import jax
+from typing import Dict, List, Optional, Tuple, Union
+
 import jax.numpy as jnp
-from typing import Optional, Union, Tuple, Dict, List
+import numpy as np
+from neuron import h
+
 
 class Neuron:
     """
@@ -41,7 +42,9 @@ class Neuron:
         """
         h.run()
 
-    def record_trace(self, ref=None, t_ref=None, run: bool = True, use_jax: bool = False):
+    def record_trace(
+        self, ref=None, t_ref=None, run: bool = True, use_jax: bool = False
+    ):
         """
         Record a variable over time.
 
@@ -72,7 +75,9 @@ class Neuron:
             v = np.array(list(v_vec))
         return t, v
 
-    def record_multiple_traces(self, refs: dict, t_ref=None, run: bool = True, use_jax: bool = False):
+    def record_multiple_traces(
+        self, refs: dict, t_ref=None, run: bool = True, use_jax: bool = False
+    ):
         """
         Record multiple variables over time.
 
@@ -107,14 +112,16 @@ class Neuron:
             traces = {name: (t_arr, np.array(list(vv))) for name, vv in vecs.items()}
         return traces
 
-    def sweep_parameter(self,
-                        param_name: str,
-                        values: List,
-                        param_name2: Optional[str] = None,
-                        values2: Optional[List] = None,
-                        ref=None,
-                        t_ref=None,
-                        use_jax: bool = False):
+    def sweep_parameter(
+        self,
+        param_name: str,
+        values: List,
+        param_name2: Optional[str] = None,
+        values2: Optional[List] = None,
+        ref=None,
+        t_ref=None,
+        use_jax: bool = False,
+    ):
         """
         Sweep one or two NEURON parameters and record a trace for each combination.
         If param_name2 and values2 are provided, a 2D sweep is performed.
@@ -132,7 +139,7 @@ class Neuron:
         original2 = None
         if param_name2:
             if not hasattr(h, param_name2):
-                setattr(h, param_name, original) # Restore first param before erroring
+                setattr(h, param_name, original)  # Restore first param before erroring
                 raise AttributeError(f"NEURON has no parameter '{param_name2}'")
             original2 = getattr(h, param_name2)
 
@@ -142,11 +149,15 @@ class Neuron:
                 current_sweep_results = {}
                 for val2 in values2:
                     setattr(h, param_name2, val2)
-                    t, v = self.record_trace(ref=ref, t_ref=t_ref, run=True, use_jax=use_jax)
+                    t, v = self.record_trace(
+                        ref=ref, t_ref=t_ref, run=True, use_jax=use_jax
+                    )
                     current_sweep_results[val2] = (t, v)
                 results[val] = current_sweep_results
             else:
-                t, v = self.record_trace(ref=ref, t_ref=t_ref, run=True, use_jax=use_jax)
+                t, v = self.record_trace(
+                    ref=ref, t_ref=t_ref, run=True, use_jax=use_jax
+                )
                 results[val] = (t, v)
 
         # restore original parameter(s)
@@ -160,18 +171,22 @@ class Neuron:
         Export a single trace to disk as a .npz file.
         Optional metadata can be included in the .npz file.
         """
-        to_save = {'t': t, 'v': v}
+        to_save = {"t": t, "v": v}
         if metadata:
             to_save.update(metadata)
         np.savez(file_path, **to_save)
         # export complete (no return)
 
-    def plot_trace(self,
-                     traces: Union[Tuple[np.ndarray, np.ndarray], Dict[str, Tuple[np.ndarray, np.ndarray]]],
-                     title: Optional[str] = None,
-                     xlabel: str = "Time",
-                     ylabel: str = "Value",
-                     save_path: Optional[str] = None):
+    def plot_trace(
+        self,
+        traces: Union[
+            Tuple[np.ndarray, np.ndarray], Dict[str, Tuple[np.ndarray, np.ndarray]]
+        ],
+        title: Optional[str] = None,
+        xlabel: str = "Time",
+        ylabel: str = "Value",
+        save_path: Optional[str] = None,
+    ):
         """
         Plot one or more NEURON traces using matplotlib.
 
@@ -183,6 +198,7 @@ class Neuron:
             save_path: Optional path to save the figure.
         """
         import matplotlib.pyplot as plt
+
         plt.figure()
 
         if isinstance(traces, tuple) and len(traces) == 2:
@@ -194,7 +210,9 @@ class Neuron:
             if len(traces) > 1:
                 plt.legend()
         else:
-            raise ValueError("traces must be a (t,v) tuple or a dict of {'label': (t,v)}")
+            raise ValueError(
+                "traces must be a (t,v) tuple or a dict of {'label': (t,v)}"
+            )
 
         if title:
             plt.title(title)
@@ -203,4 +221,4 @@ class Neuron:
 
         if save_path:
             plt.savefig(save_path)
-        plt.show() 
+        plt.show()

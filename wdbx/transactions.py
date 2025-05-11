@@ -1,14 +1,17 @@
 """
 transactions.py - MVCC transaction management for WDBX.
 """
+
 import threading
 import uuid
-from typing import Dict, Any
+from typing import Any, Dict
+
 
 class TransactionManager:
     """
     Simple MVCC transaction manager. Placeholder implementation for version control.
     """
+
     def __init__(self):
         self.lock = threading.Lock()
         self.active_transactions: Dict[str, Dict[str, Any]] = {}
@@ -40,4 +43,4 @@ class TransactionManager:
             if tx_id not in self.active_transactions:
                 raise KeyError(f"Transaction {tx_id} not found.")
             # Placeholder: discard changes here
-            del self.active_transactions[tx_id] 
+            del self.active_transactions[tx_id]

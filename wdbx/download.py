@@ -4,9 +4,11 @@ download.py - Utilities for remote PDF downloading and optional database configu
 
 import logging
 from pathlib import Path, PurePath
+
 import requests
 
 logger = logging.getLogger(__name__)
+
 
 def configure_database(db_url: str) -> None:
     """
@@ -45,4 +47,4 @@ def download_file(url: str, dest_dir: PurePath) -> str:
             if chunk:
                 f.write(chunk)
     logger.info(f"Downloaded file to '%s'", file_path)
-    return str(file_path) 
+    return str(file_path)

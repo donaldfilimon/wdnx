@@ -1,14 +1,18 @@
 """
 chain.py - Blockchain management for WDBX.
 """
+
 from threading import Lock
 from typing import List
+
 from .blocks import DataBlock
+
 
 class BlockChain:
     """
     Manages a chain of DataBlocks with integrity checks.
     """
+
     def __init__(self):
         self.chain: List[DataBlock] = []
         self.lock = Lock()
@@ -34,4 +38,4 @@ class BlockChain:
                 curr = self.chain[i]
                 if curr.prev_hash != prev.hash or curr.hash != curr.compute_hash():
                     return False
-        return True 
+        return True

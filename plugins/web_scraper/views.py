@@ -1,12 +1,15 @@
-from flask import Blueprint, request, jsonify
-from .utils import scrape_url
-from plugin_utils.validation import require_query_params, require_json_fields
+from flask import Blueprint, jsonify, request
+
 from plugin_utils.metrics import metrics
+from plugin_utils.validation import require_json_fields, require_query_params
+
+from .utils import scrape_url
 
 scraper_bp = Blueprint("web_scraper", __name__, url_prefix="/scrape")
 
+
 @scraper_bp.route("", methods=["GET"])
-@require_query_params('url')
+@require_query_params("url")
 @metrics
 def scrape_get():
     """Scrape a URL provided via query string."""
@@ -19,8 +22,9 @@ def scrape_get():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @scraper_bp.route("", methods=["POST"])
-@require_json_fields('url')
+@require_json_fields("url")
 @metrics
 def scrape_post():
     """Scrape a URL provided via JSON body."""
@@ -32,4 +36,4 @@ def scrape_post():
         data = scrape_url(url)
         return jsonify(data)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500

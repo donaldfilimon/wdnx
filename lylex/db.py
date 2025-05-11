@@ -1,24 +1,29 @@
 """
 # db.py - Database wrapper for Lylex using WDBX as the vector store.
 """
-from wdbx import WDBX
-import logging
+
 import atexit
-from typing import Callable, List, Tuple, Optional, Dict, Any
+import logging
+import os  # For checking OPENAI_API_KEY
+from contextlib import contextmanager
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+from wdbx import WDBX
 from wdbx.self_update import CodeUpdater
 from wdbx.self_update_advanced import AdvancedUpdater
-from contextlib import contextmanager
+
+from .ai import LylexModelHandler  # For future use, or if it develops an embedding API
 from .embeddings import EmbeddingHandler
-from .ai import LylexModelHandler # For future use, or if it develops an embedding API
-import os # For checking OPENAI_API_KEY
 
 logger = logging.getLogger(__name__)
+
 
 class LylexDB:
     """
     Wrapper around WDBX for storing and retrieving prompt-response interactions.
     Supports custom embedding functions to generate real vectors.
     """
+
     def __init__(
         self,
         vector_dimension: int = 384,
@@ -26,9 +31,9 @@ class LylexDB:
         thread_safe: bool = False,
         embed_fn: Optional[Callable[[str], List[float]]] = None,
         shards: Optional[Dict[str, Dict[str, Any]]] = None,
-        embedding_handler: Optional[EmbeddingHandler] = None, # New parameter
-        model_handler: Optional[LylexModelHandler] = None, # New parameter (for future)
-        **kwargs: Any
+        embedding_handler: Optional[EmbeddingHandler] = None,  # New parameter
+        model_handler: Optional[LylexModelHandler] = None,  # New parameter (for future)
+        **kwargs: Any,
     ):
         """
         Initialize the LylexDB.
@@ -46,10 +51,13 @@ class LylexDB:
         self.vector_dimension = vector_dimension
         self.embed_fn = embed_fn
         self.embedding_handler = embedding_handler
-        self.model_handler = model_handler # Stored for future use
+        self.model_handler = model_handler  # Stored for future use
 
         # Warn if vector_dimension seems mismatched with a provided OpenAI EmbeddingHandler
-        if self.embedding_handler and self.embedding_handler.model == "text-embedding-ada-002":
+        if (
+            self.embedding_handler
+            and self.embedding_handler.model == "text-embedding-ada-002"
+        ):
             openai_ada_dim = 1536
             if self.vector_dimension != openai_ada_dim:
                 logger.warning(
@@ -60,12 +68,12 @@ class LylexDB:
 
         # Initialize WDBX client with optional sharding
         client_args: Dict[str, Any] = {
-            'vector_dimension': vector_dimension,
-            'enable_plugins': enable_plugins,
-            'thread_safe': thread_safe
+            "vector_dimension": vector_dimension,
+            "enable_plugins": enable_plugins,
+            "thread_safe": thread_safe,
         }
         if shards is not None:
-            client_args['shards'] = shards
+            client_args["shards"] = shards
         client_args.update(kwargs)
         self.client = WDBX(**client_args)
         self.client.initialize()
@@ -79,7 +87,7 @@ class LylexDB:
         """
         if self.embed_fn:
             return self.embed_fn(prompt)
-        
+
         if self.embedding_handler and os.getenv("OPENAI_API_KEY"):
             try:
                 vector = self.embedding_handler.embed([prompt])[0]
@@ -91,11 +99,13 @@ class LylexDB:
                     return [0.0] * self.vector_dimension
                 return vector
             except Exception as e:
-                logger.error(f"Error using EmbeddingHandler: {e}. Falling back to zero-vector.")
+                logger.error(
+                    f"Error using EmbeddingHandler: {e}. Falling back to zero-vector."
+                )
                 return [0.0] * self.vector_dimension
 
         # Use model_handler for embedding if provided
-        if self.model_handler and hasattr(self.model_handler, 'get_embedding'):
+        if self.model_handler and hasattr(self.model_handler, "get_embedding"):
             try:
                 vector = self.model_handler.get_embedding(prompt)
                 if len(vector) != self.vector_dimension:
@@ -106,17 +116,16 @@ class LylexDB:
                     return [0.0] * self.vector_dimension
                 return vector
             except Exception as e:
-                logger.error(f"Error using ModelHandler for embedding: {e}. Falling back to zero-vector.")
+                logger.error(
+                    f"Error using ModelHandler for embedding: {e}. Falling back to zero-vector."
+                )
                 return [0.0] * self.vector_dimension
 
         # Fallback to zero-vector
         return [0.0] * self.vector_dimension
 
     def store_interaction(
-        self,
-        prompt: str,
-        response: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, prompt: str, response: str, metadata: Optional[Dict[str, Any]] = None
     ) -> int:
         """
         Store a prompt-response interaction in the vector database.
@@ -131,23 +140,23 @@ class LylexDB:
         metadata.update({"prompt": prompt, "response": response})
         vector = self._get_vector(prompt)
         # Use distributed store if shards configured
-        if hasattr(self.client, 'distributed_store') and self.client.shards:
+        if hasattr(self.client, "distributed_store") and self.client.shards:
             return self.client.distributed_store(prompt, vector, metadata)
         return self.client.store(vector, metadata)
 
     def bulk_store_interactions(
-        self,
-        items: List[Tuple[str, str, Optional[Dict[str, Any]]]]
+        self, items: List[Tuple[str, str, Optional[Dict[str, Any]]]]
     ) -> List[int]:
         """
         Store multiple prompt-response interactions in bulk. Returns list of stored vector IDs.
         """
-        return [self.store_interaction(prompt, response, metadata) for prompt, response, metadata in items]
+        return [
+            self.store_interaction(prompt, response, metadata)
+            for prompt, response, metadata in items
+        ]
 
     def search_interactions(
-        self,
-        prompt: str,
-        limit: int = 5
+        self, prompt: str, limit: int = 5
     ) -> List[Tuple[int, float, Dict[str, Any]]]:
         """
         Retrieve similar interactions based on prompt similarity.
@@ -159,26 +168,30 @@ class LylexDB:
         """
         vector = self._get_vector(prompt)
         # Use distributed search if shards configured
-        if hasattr(self.client, 'distributed_search') and self.client.shards:
+        if hasattr(self.client, "distributed_search") and self.client.shards:
             return self.client.distributed_search(prompt, vector, limit=limit)
         return self.client.search(vector, limit=limit)
 
-    def broadcast_search_interactions(self, prompt: str, limit: int = 5) -> Dict[str, List[Tuple[int, float, Dict[str, Any]]]]:
+    def broadcast_search_interactions(
+        self, prompt: str, limit: int = 5
+    ) -> Dict[str, List[Tuple[int, float, Dict[str, Any]]]]:
         """
         Broadcast search across all shards, returning per-shard results.
         """
         vector = self._get_vector(prompt)
-        if hasattr(self.client, 'broadcast_search') and self.client.shard_clients:
+        if hasattr(self.client, "broadcast_search") and self.client.shard_clients:
             return self.client.broadcast_search(vector, limit=limit)
         # Fallback single shard
         results = self.client.search(vector, limit=limit)
-        return {'default': results}
+        return {"default": results}
 
     def delete_interaction(self, interaction_id: int) -> bool:
         """Delete a stored interaction by ID."""
         return self.client.delete(interaction_id)
 
-    def update_interaction_metadata(self, interaction_id: int, metadata: Dict[str, Any]) -> bool:
+    def update_interaction_metadata(
+        self, interaction_id: int, metadata: Dict[str, Any]
+    ) -> bool:
         """Update metadata for a stored interaction."""
         return self.client.update_metadata(interaction_id, metadata)
 
@@ -209,7 +222,9 @@ class LylexDB:
         vector = [0.0] * self.vector_dimension
         raw = self.client.search(vector, limit=limit)
         # Format as list of dicts
-        return [{'id': _id, 'score': score, 'metadata': meta} for _id, score, meta in raw]
+        return [
+            {"id": _id, "score": score, "metadata": meta} for _id, score, meta in raw
+        ]
 
     def begin_transaction(self) -> Any:
         """
@@ -252,9 +267,7 @@ class LylexDB:
         logger.info("LylexDB WDBX client shutdown.")
 
     def store_model(
-        self,
-        file_path: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, file_path: str, metadata: Optional[Dict[str, Any]] = None
     ) -> int:
         """
         Store a serialized model artifact via the underlying WDBX client.
@@ -264,20 +277,13 @@ class LylexDB:
         """
         return self.client.store_model(file_path, metadata)
 
-    def load_model(
-        self,
-        artifact_id: int,
-        output_path: str
-    ) -> None:
+    def load_model(self, artifact_id: int, output_path: str) -> None:
         """
         Retrieve a stored model artifact and write it locally via the underlying WDBX client.
         """
         self.client.load_model(artifact_id, output_path)
 
-    def neural_backtrace(
-        self,
-        prompt: str
-    ) -> Dict[str, Any]:
+    def neural_backtrace(self, prompt: str) -> Dict[str, Any]:
         """
         Perform a neural backtrace for the given prompt.
 
@@ -292,10 +298,7 @@ class LylexDB:
         # Call the underlying WDBX neural backtrack
         return self.client.neural_backtrack(vector)
 
-    def backtrace_pattern(
-        self,
-        vector: List[float]
-    ) -> Dict[str, Any]:
+    def backtrace_pattern(self, vector: List[float]) -> Dict[str, Any]:
         """
         Directly perform neural backtrace on a raw embedding vector.
 
@@ -319,7 +322,9 @@ class LylexDB:
         """
         CodeUpdater().reload_module(module_name)
 
-    def schedule_self_update(self, interval: int, repo_dir: str, module_paths: Optional[List[str]] = None) -> None:
+    def schedule_self_update(
+        self, interval: int, repo_dir: str, module_paths: Optional[List[str]] = None
+    ) -> None:
         """
         Schedule periodic Git-based code updates for Lylex modules.
         """
@@ -332,31 +337,49 @@ class LylexDB:
         """
         AdvancedUpdater().stop()
 
-    def git_update(self, local_dir: str, module_paths: Optional[List[str]] = None) -> None:
+    def git_update(
+        self, local_dir: str, module_paths: Optional[List[str]] = None
+    ) -> None:
         """
         Perform an immediate Git pull and apply patches.
         """
         adv = AdvancedUpdater(repo_url=None)
         adv.update_from_git(local_dir, module_paths)
 
-    def rollback_update(self, file_path: str, backup_file: Optional[str] = None) -> None:
+    def rollback_update(
+        self, file_path: str, backup_file: Optional[str] = None
+    ) -> None:
         """
         Roll back a patched file.
         """
         AdvancedUpdater().rollback(file_path, backup_file)
 
-    def ai_update(self, file_path: str, instruction: str, model_name: str = "gpt2", backend: str = "pt", memory_limit: int = 5) -> None:
+    def ai_update(
+        self,
+        file_path: str,
+        instruction: str,
+        model_name: str = "gpt2",
+        backend: str = "pt",
+        memory_limit: int = 5,
+    ) -> None:
         """
         Use an AI agent to generate and apply a patch based on the given instruction.
         """
         adv = AdvancedUpdater(repo_url=None)
-        adv.ai_update(file_path, instruction, model_name=model_name, backend=backend, memory_limit=memory_limit)
+        adv.ai_update(
+            file_path,
+            instruction,
+            model_name=model_name,
+            backend=backend,
+            memory_limit=memory_limit,
+        )
 
     def get_outdated_packages(self) -> list[Dict[str, Any]]:
         """
         Get a list of outdated pip packages without recording them.
         """
         from wdbx.update_utils import get_outdated_packages
+
         return get_outdated_packages()
 
     def search_outdated_packages(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -367,4 +390,6 @@ class LylexDB:
         vector = [0.0] * self.vector_dimension
         raw_results = self.client.search(vector, limit=limit)
         # Filter entries that have 'package' metadata
-        return [metadata for _id, _score, metadata in raw_results if 'package' in metadata] 
+        return [
+            metadata for _id, _score, metadata in raw_results if "package" in metadata
+        ]

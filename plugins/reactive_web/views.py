@@ -1,6 +1,7 @@
-from flask import Blueprint, request, render_template_string, jsonify
+from flask import Blueprint, jsonify, render_template_string, request
 
 reactive_bp = Blueprint("reactive_web", __name__, url_prefix="/reactive")
+
 
 @reactive_bp.route("/render", methods=["POST"])
 def render_dynamic():
@@ -21,10 +22,11 @@ def render_dynamic():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @reactive_bp.route("/greet/<string:name>")
 def greet(name):
     """
     Simple greeting endpoint: /reactive/greet/YourName
     """
     html = render_template_string("<h1>Hello, {{ name }}!</h1>", name=name)
-    return html 
+    return html

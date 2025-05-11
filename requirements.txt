@@ -2,7 +2,6 @@ Flask>=2.2.0
 pydantic>=1.10.0
 prometheus-client>=0.16.0
 python-dotenv>=1.0.0
-# wdbx>=0.1.0
 aiohttp>=3.8.0
 requests>=2.25.1
 transformers>=4.51.3
@@ -58,8 +57,18 @@ flask-Login>=0.6.2
 # JWT support
 flask-jwt-extended>=4.4.0
 
-# Added requests>=2.0.0
-requests>=2.0.0
+# Additional dependencies
+click>=8.0.0
+Flask-Cors>=3.0.10
+jax>=0.6.0
+jaxlib>=0.6.0
+torch>=2.0.0
+pdf2image>=1.17.0
+pytesseract>=0.3.10
+pillow>=11.2.0
 
-# Metrics support
-prometheus-client>=0.16.0 
+# Optional ML/GPU dependencies
+datasets>=2.10.0
+tiktoken>=0.4.0
+wdbx>=0.1.0
+

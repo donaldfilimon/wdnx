@@ -1,14 +1,14 @@
 """
 model.py - Neural network and distributed compute utilities for the lylex package.
 """
-import torch
-import torch.nn as nn
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 import jax
 import jax.numpy as jnp
+import torch
+import torch.distributed as dist
+import torch.nn as nn
 from flax import linen as nnx
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 __all__ = [
     "TorchEmbeddingModel",
@@ -18,10 +18,12 @@ __all__ = [
     "jax_distributed",
 ]
 
+
 class TorchEmbeddingModel(nn.Module):
     """
     Simple MLP embedding model in PyTorch.
     """
+
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int):
         super().__init__()
         self.net = nn.Sequential(
@@ -47,13 +49,17 @@ def wrap_torch_ddp(model: nn.Module) -> DDP:
     Wrap a PyTorch model in DistributedDataParallel.
     """
     if not dist.is_initialized():
-        raise RuntimeError("Distributed not initialized. Call init_torch_distributed first.")
+        raise RuntimeError(
+            "Distributed not initialized. Call init_torch_distributed first."
+        )
     return DDP(model)
+
 
 class JAXEmbeddingModel(nnx.Module):
     """
     Simple MLP embedding model in Flax (JAX).
     """
+
     hidden_dim: int
     output_dim: int
 
@@ -69,4 +75,4 @@ def jax_distributed(fn):
     """
     Parallelize a JAX function across devices using pmap.
     """
-    return jax.pmap(fn) 
+    return jax.pmap(fn)

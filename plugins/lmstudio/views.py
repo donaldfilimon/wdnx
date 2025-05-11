@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
 import openai
-from plugin_utils.validation import require_json_fields
-from plugin_utils.metrics import metrics
-from plugin_utils.logging import get_logger
+from flask import Blueprint, jsonify, request
+
 from config import settings
+from plugin_utils.logging import get_logger
+from plugin_utils.metrics import metrics
+from plugin_utils.validation import require_json_fields
 
 # Configure OpenAI base URL for LMStudio if not already done globally
 # This ensures the plugin uses the correct endpoint if multiple OpenAI-compatible services are used.
@@ -13,6 +14,7 @@ if settings.lmstudio_api_url:
 lmstudio_bp = Blueprint("lmstudio", __name__, url_prefix="/api/lmstudio")
 logger = get_logger(__name__)
 
+
 @lmstudio_bp.route("/models", methods=["GET"])
 @metrics
 def list_models():
@@ -20,14 +22,17 @@ def list_models():
     logger.info("Request to list LMStudio models.")
     try:
         models = openai.Model.list()
-        logger.info(f"Successfully listed {len(models.get('data', []))} LMStudio models.")
+        logger.info(
+            f"Successfully listed {len(models.get('data', []))} LMStudio models."
+        )
         return jsonify(models)
     except Exception as e:
         logger.error(f"Error listing LMStudio models: {e}", exc_info=True)
         raise
 
+
 @lmstudio_bp.route("/complete", methods=["POST"])
-@require_json_fields('model', 'prompt') # Ensure model and prompt are provided
+@require_json_fields("model", "prompt")  # Ensure model and prompt are provided
 @metrics
 def generate_completion():
     """Generate completion using LMStudio model."""
@@ -41,8 +46,12 @@ def generate_completion():
         logger.info(f"Successfully generated completion from LMStudio model: {model}")
         return jsonify(resp.to_dict())
     except Exception as e:
-        logger.error(f"Error generating completion from LMStudio model {model}: {e}", exc_info=True)
+        logger.error(
+            f"Error generating completion from LMStudio model {model}: {e}",
+            exc_info=True,
+        )
         raise
+
 
 @lmstudio_bp.route("/embed", methods=["POST"])
 def generate_embedding():
@@ -56,4 +65,4 @@ def generate_embedding():
         resp = openai.Embedding.create(model=model, input=inputs)
         return jsonify(resp.to_dict())
     except Exception as e:
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500

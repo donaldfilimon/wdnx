@@ -1,25 +1,34 @@
 """
 ai.py - Self-learning AI agent using PyTorch and JAX local models.
 """
-import torch
-import jax
-import jax.numpy as jnp
-from transformers import AutoTokenizer, AutoModelForCausalLM, FlaxAutoModelForCausalLM
-from transformers import Trainer, TrainingArguments
+
 import logging
-from typing import List, Dict, Any, Optional
-from .db import LylexDB
-import jax.config
 from contextlib import nullcontext
+from typing import Any, Dict, List, Optional
+
+import jax
+import jax.config
+import torch
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    FlaxAutoModelForCausalLM,
+    Trainer,
+    TrainingArguments,
+)
+
+from .db import LylexDB
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["LylexModelHandler", "LylexAgent"]
 
+
 class LylexModelHandler:
     """
     Singleton handler to load and generate from local language models in PyTorch or JAX.
     """
+
     _instances = {}
 
     def __new__(cls, backend: str = "pt"):
@@ -29,7 +38,7 @@ class LylexModelHandler:
         return cls._instances[key]
 
     def __init__(self, backend: str = "pt"):
-        if hasattr(self, '_initialized') and self._initialized:
+        if hasattr(self, "_initialized") and self._initialized:
             return
         self.backend = backend.lower()
         if self.backend not in ["pt", "jax"]:
@@ -41,12 +50,12 @@ class LylexModelHandler:
         self._initialized = True
         logger.info(f"LylexModelHandler initialized with backend: {self.backend}")
         # Configure JAX to prioritize GPU if available
-        if self.backend == 'jax':
+        if self.backend == "jax":
             devices = jax.devices()
-            if any('gpu' in str(d).lower() for d in devices):
-                jax.config.update('jax_platform_name', 'gpu')
+            if any("gpu" in str(d).lower() for d in devices):
+                jax.config.update("jax_platform_name", "gpu")
             else:
-                jax.config.update('jax_platform_name', 'cpu')
+                jax.config.update("jax_platform_name", "cpu")
 
     def load_model(self, model_name: str) -> None:
         """
@@ -82,25 +91,26 @@ class LylexModelHandler:
         """
         if self.model is None or self.tokenizer is None:
             raise RuntimeError("No model loaded; call load_model() first.")
-        inputs = self.tokenizer(prompt, return_tensors=("jax" if self.backend=="jax" else "pt"))
+        inputs = self.tokenizer(
+            prompt, return_tensors=("jax" if self.backend == "jax" else "pt")
+        )
         if self.backend == "jax":
             outputs = self.model.generate(**inputs, max_length=max_length, **kwargs)
-            generated = self.tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
+            generated = self.tokenizer.decode(
+                outputs.sequences[0], skip_special_tokens=True
+            )
         else:
             device = next(self.model.parameters()).device
             inputs = {k: v.to(device) for k, v in inputs.items()}
             # Use mixed precision on GPU for faster inference
-            ctx = torch.cuda.amp.autocast() if device.type == 'cuda' else nullcontext()
+            ctx = torch.cuda.amp.autocast() if device.type == "cuda" else nullcontext()
             with torch.no_grad(), ctx:
                 outputs = self.model.generate(**inputs, max_length=max_length, **kwargs)
             generated = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return generated
 
     def train(
-        self,
-        train_dataset: Any,
-        output_dir: str,
-        **training_args_kwargs: Any
+        self, train_dataset: Any, output_dir: str, **training_args_kwargs: Any
     ) -> None:
         """
         Fine-tune the loaded language model on a given dataset.
@@ -137,10 +147,14 @@ class LylexModelHandler:
             raise RuntimeError("No model loaded; call load_model() first.")
         # Tokenize with attention mask
         if self.backend == "jax":
-            inputs = self.tokenizer(text, return_tensors="jax", return_attention_mask=True)
+            inputs = self.tokenizer(
+                text, return_tensors="jax", return_attention_mask=True
+            )
             # Ensure hidden states are returned
             self.model.config.output_hidden_states = True
-            outputs = self.model(**inputs, params=self.model.params, output_hidden_states=True)
+            outputs = self.model(
+                **inputs, params=self.model.params, output_hidden_states=True
+            )
             hidden_states = outputs.hidden_states[-1]  # [1, seq_len, dim]
             mask = inputs["attention_mask"]
             summed = (hidden_states * mask[..., None]).sum(axis=1)
@@ -148,10 +162,14 @@ class LylexModelHandler:
             pooled = summed / counts
             return list(pooled[0].tolist())
         else:
-            inputs = self.tokenizer(text, return_tensors="pt", return_attention_mask=True)
+            inputs = self.tokenizer(
+                text, return_tensors="pt", return_attention_mask=True
+            )
             device = next(self.model.parameters()).device
             inputs = {k: v.to(device) for k, v in inputs.items()}
-            embeds = self.model.get_input_embeddings()(inputs["input_ids"])  # [1, seq_len, dim]
+            embeds = self.model.get_input_embeddings()(
+                inputs["input_ids"]
+            )  # [1, seq_len, dim]
             mask = inputs["attention_mask"].unsqueeze(-1)
             masked_embeds = embeds * mask
             summed = masked_embeds.sum(dim=1)  # [1, dim]
@@ -159,11 +177,19 @@ class LylexModelHandler:
             pooled = summed / counts
             return pooled.squeeze(0).detach().cpu().tolist()
 
+
 class LylexAgent:
     """
     High-level agent to interface with LylexModelHandler for self-learning.
     """
-    def __init__(self, model_name: str, backend: str = "pt", memory_db: Optional[LylexDB] = None, memory_limit: int = 5) -> None:
+
+    def __init__(
+        self,
+        model_name: str,
+        backend: str = "pt",
+        memory_db: Optional[LylexDB] = None,
+        memory_limit: int = 5,
+    ) -> None:
         """
         Initialize the LylexAgent with a language model.
 
@@ -176,7 +202,9 @@ class LylexAgent:
         self.handler = LylexModelHandler(backend)
         self.handler.load_model(model_name)
         # Initialize conversational memory
-        self.memory_db = memory_db if memory_db is not None else LylexDB(vector_dimension=384)
+        self.memory_db = (
+            memory_db if memory_db is not None else LylexDB(vector_dimension=384)
+        )
         self.memory_limit = memory_limit
 
     def ask(self, text: str, max_length: int = 128) -> str:
@@ -212,7 +240,9 @@ class LylexAgent:
         # Build context dialogue
         context = ""
         for _, _, meta in memories:
-            context += f"User: {meta.get('prompt')}\nAssistant: {meta.get('response')}\n"
+            context += (
+                f"User: {meta.get('prompt')}\nAssistant: {meta.get('response')}\n"
+            )
         # Compose full prompt with context
         full_prompt = context + f"User: {prompt}\nAssistant:"
         # Generate response using model handler
@@ -228,4 +258,4 @@ class LylexAgent:
         try:
             return self.memory_db.search_outdated_packages()
         except AttributeError:
-            return [] 
+            return []

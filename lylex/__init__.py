@@ -6,44 +6,32 @@ This package provides functions to tokenize and analyze text.
 
 __all__ = ["tokenize"]
 
-from .ai import LylexModelHandler, LylexAgent
-from .db import LylexDB
-from .model import (
-    TorchEmbeddingModel,
-    init_torch_distributed,
-    wrap_torch_ddp,
-    JAXEmbeddingModel,
-    jax_distributed,
-)
-from .async_db import AsyncLylexDB
-from .training import TrainingManager
-from .vision import VisionModelHandler
-from .code import CodeModelHandler
-from .image import ImageGenerator
-from .embeddings import EmbeddingHandler
-from .brain import Brain
-from .neuron import Neuron
 
-__all__.extend([
-    "LylexModelHandler",
-    "LylexAgent",
-    "LylexDB",
-    "TorchEmbeddingModel",
-    "init_torch_distributed",
-    "wrap_torch_ddp",
-    "JAXEmbeddingModel",
-    "jax_distributed",
-    "store_model", "load_model",
-    "neural_backtrace", "backtrace_pattern",
-    "AsyncLylexDB",
-    "TrainingManager",
-    "VisionModelHandler",
-    "CodeModelHandler",
-    "ImageGenerator",
-    "EmbeddingHandler",
-    "Brain",
-    "Neuron",
-])
+__all__.extend(
+    [
+        "LylexModelHandler",
+        "LylexAgent",
+        "LylexDB",
+        "TorchEmbeddingModel",
+        "init_torch_distributed",
+        "wrap_torch_ddp",
+        "JAXEmbeddingModel",
+        "jax_distributed",
+        "store_model",
+        "load_model",
+        "neural_backtrace",
+        "backtrace_pattern",
+        "AsyncLylexDB",
+        "TrainingManager",
+        "VisionModelHandler",
+        "CodeModelHandler",
+        "ImageGenerator",
+        "EmbeddingHandler",
+        "Brain",
+        "Neuron",
+    ]
+)
+
 
 def tokenize(text: str) -> list[str]:
     """
@@ -57,8 +45,9 @@ def tokenize(text: str) -> list[str]:
     # Try HuggingFace tokenizer from LylexModelHandler
     try:
         from .ai import LylexModelHandler
-        handler = LylexModelHandler(backend='pt')
-        tok = getattr(handler, 'tokenizer', None)
+
+        handler = LylexModelHandler(backend="pt")
+        tok = getattr(handler, "tokenizer", None)
         if tok is not None:
             # Use fast tokenizer's tokenize method
             return tok.tokenize(text)
@@ -67,12 +56,13 @@ def tokenize(text: str) -> list[str]:
     # Try tiktoken if available
     try:
         import tiktoken
+
         # Use default encoding
-        enc = tiktoken.get_encoding('cl100k_base')
+        enc = tiktoken.get_encoding("cl100k_base")
         ids = enc.encode(text)
         tokens = [enc.decode([i]) for i in ids]
         return tokens
     except Exception:
         pass
     # Fallback to simple whitespace tokenizer
-    return text.split() 
+    return text.split()

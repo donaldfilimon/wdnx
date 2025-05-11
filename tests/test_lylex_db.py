@@ -2,25 +2,31 @@ import pytest
 
 import lylex.db as db_module
 
+
 class DummyClient:
     def __init__(self, vector_dimension, enable_plugins, thread_safe, **kwargs):
         self._client = self
         self.vector_dimension = vector_dimension
         self.stored = []
+
     def initialize(self):
         pass
+
     def store(self, vector, metadata):
         self.stored.append((vector, metadata))
         return 123
+
     def search(self, vector, limit):
-        return [(1, 0.9, {"prompt":"hi","response":"hello"})]
+        return [(1, 0.9, {"prompt": "hi", "response": "hello"})]
+
     def shutdown(self):
         pass
+
 
 @pytest.fixture(autouse=True)
 def patch_wdbx(monkeypatch):
     # Monkeypatch WDBX in db_module
-    monkeypatch.setattr(db_module, 'WDBX', DummyClient)
+    monkeypatch.setattr(db_module, "WDBX", DummyClient)
     return monkeypatch
 
 
@@ -42,4 +48,4 @@ def test_search_interactions(monkeypatch):
 def test_shutdown(monkeypatch):
     db = db_module.LylexDB(vector_dimension=5)
     # Should not raise
-    db.shutdown() 
+    db.shutdown()

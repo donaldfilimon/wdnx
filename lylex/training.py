@@ -1,19 +1,23 @@
-import os
 import logging
-from typing import Optional, Dict, Any
+import os
+from typing import Any, Dict, Optional
+
 import optuna
 import wandb
-from transformers import TrainingArguments, Trainer
+from peft import LoraConfig, TaskType, get_peft_model
+from transformers import Trainer, TrainingArguments
 from transformers.integrations import WandbCallback
-from peft import LoraConfig, get_peft_model, TaskType
+
 from .ai import LylexModelHandler
 
 logger = logging.getLogger(__name__)
+
 
 class TrainingManager:
     """
     High-level manager for advanced training workflows with hyperparameter tuning, LoRA, and Weights & Biases logging.
     """
+
     def __init__(
         self,
         model_name: str,
@@ -31,7 +35,7 @@ class TrainingManager:
             inference_mode=False,
             r=peft_r,
             lora_alpha=peft_alpha,
-            lora_dropout=peft_dropout
+            lora_dropout=peft_dropout,
         )
         self.handler.model = get_peft_model(self.handler.model, peft_config)
         # Initialize W&B if project provided
@@ -40,7 +44,9 @@ class TrainingManager:
             self.wandb_project = wandb_project
         else:
             self.wandb_project = None
-        logger.info("TrainingManager initialized for model %s (backend=%s)", model_name, backend)
+        logger.info(
+            "TrainingManager initialized for model %s (backend=%s)", model_name, backend
+        )
 
     def train(
         self,
@@ -59,16 +65,18 @@ class TrainingManager:
             training_args_kwargs: Keyword args for TrainingArguments (e.g., num_train_epochs, per_device_train_batch_size).
         """
         # Auto-config GPU mixed-precision for PyTorch backend
-        if self.handler.backend == 'pt':
+        if self.handler.backend == "pt":
             try:
                 import torch
+
                 if torch.cuda.is_available():
-                    training_args_kwargs.setdefault('fp16', True)
+                    training_args_kwargs.setdefault("fp16", True)
             except ImportError:
                 pass
         # Choose training framework based on backend
-        if self.handler.backend == 'jax':
-            from transformers import FlaxTrainingArguments, FlaxTrainer
+        if self.handler.backend == "jax":
+            from transformers import FlaxTrainer, FlaxTrainingArguments
+
             args = FlaxTrainingArguments(
                 output_dir=output_dir,
                 evaluation_strategy="steps" if eval_dataset is not None else "no",
@@ -83,7 +91,8 @@ class TrainingManager:
                 tokenizer=self.handler.tokenizer,
             )
         else:
-            from transformers import TrainingArguments, Trainer
+            from transformers import Trainer, TrainingArguments
+
             args = TrainingArguments(
                 output_dir=output_dir,
                 evaluation_strategy="steps" if eval_dataset is not None else "no",
@@ -130,12 +139,15 @@ class TrainingManager:
         Returns:
             Best hyperparameters from the study.
         """
+
         def objective(trial):
             # Define search space
             trial_args = {
-                'learning_rate': trial.suggest_loguniform('learning_rate', 1e-5, 5e-4),
-                'num_train_epochs': trial.suggest_int('num_train_epochs', 1, 5),
-                'per_device_train_batch_size': trial.suggest_categorical('per_device_train_batch_size', [8, 16, 32])
+                "learning_rate": trial.suggest_loguniform("learning_rate", 1e-5, 5e-4),
+                "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
+                "per_device_train_batch_size": trial.suggest_categorical(
+                    "per_device_train_batch_size", [8, 16, 32]
+                ),
             }
             args = TrainingArguments(
                 output_dir=output_dir,
@@ -153,10 +165,10 @@ class TrainingManager:
             )
             metrics = trainer.evaluate()
             # Objective: minimize eval_loss
-            return metrics.get('eval_loss', float('inf'))
+            return metrics.get("eval_loss", float("inf"))
 
         study = optuna.create_study(direction=direction)
         study.optimize(objective, n_trials=n_trials)
         best_params = study.best_params
         logger.info("Optuna best hyperparameters: %s", best_params)
-        return best_params 
+        return best_params

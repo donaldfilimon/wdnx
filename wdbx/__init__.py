@@ -4,18 +4,23 @@ wdbx - Core module for the WDBX vector database and blockchain engine (modular v
 This package provides the main interface and utilities for WDBX integration.
 """
 
-from .client import WDBX, initialize_backend
 from .async_client import AsyncWDBX, initialize_async_backend
-from .exceptions import WDBXError, RateLimitError, AuthenticationError, AuthorizationError
-from .metrics import start_metrics_server
-from .download import download_file, configure_database
 from .blocks import DataBlock
 from .chain import BlockChain
-from .transactions import TransactionManager
+from .client import WDBX, initialize_backend
+from .download import configure_database, download_file
+from .exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    RateLimitError,
+    WDBXError,
+)
 from .indexing import VectorIndex
-from .sharding import ShardManager
+from .metrics import start_metrics_server
 from .self_update import CodeUpdater
 from .self_update_advanced import AdvancedUpdater
+from .sharding import ShardManager
+from .transactions import TransactionManager
 
 __all__ = [
     "WDBX",
@@ -39,7 +44,10 @@ __all__ = [
     "CodeUpdater",
     "AdvancedUpdater",
     # Vector utilities
-    "normalize", "cosine_similarity", "bulk_similarity", "FaissIndexer",
+    "normalize",
+    "cosine_similarity",
+    "bulk_similarity",
+    "FaissIndexer",
 ]
 
-__version__ = "0.1.0" 
+__version__ = "0.1.0"

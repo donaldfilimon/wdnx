@@ -1,8 +1,0 @@
-{
-  "identifier": "vscode_integration",
-  "name": "VSCode Integration",
-  "author": "auto-generated",
-  "license": "MIT",
-  "description": "Endpoints to support VSCode editor integrations",
-  "version": "0.1.0"
-} 

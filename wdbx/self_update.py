@@ -1,12 +1,14 @@
 """
 self_update.py - Runtime code patching and module reload utilities for WDBX.
 """
-import os
-import logging
+
 import importlib
-from typing import Dict, Tuple
+import logging
+import os
+from typing import Dict
 
 logger = logging.getLogger(__name__)
+
 
 class CodeUpdater:
     """
@@ -19,7 +21,7 @@ class CodeUpdater:
         """
         abs_path = os.path.abspath(file_path)
         logger.info(f"Applying code patch to {abs_path}")
-        with open(abs_path, 'w', encoding='utf-8') as f:
+        with open(abs_path, "w", encoding="utf-8") as f:
             f.write(new_code)
         logger.info(f"Patch applied to {abs_path}")
 
@@ -40,10 +42,10 @@ class CodeUpdater:
         Expects keys like 'module_name:file_path'.
         """
         for key, code in patches.items():
-            if ':' in key:
-                module_name, file_path = key.split(':', 1)
+            if ":" in key:
+                module_name, file_path = key.split(":", 1)
             else:
                 module_name, file_path = None, key
             self.apply_patch(file_path, code)
             if module_name:
-                self.reload_module(module_name) 
+                self.reload_module(module_name)

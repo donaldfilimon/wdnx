@@ -13,18 +13,15 @@ Improvements:
 - Security and clarity improvements
 """
 
-import asyncio
 import importlib.metadata
 import json
 import logging
-import os
 import socket
 import ssl
 import tempfile
 import threading
 from datetime import timedelta
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Callable, List, Optional, Set
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -70,8 +67,11 @@ from blueprints.plugin_admin import plugin_admin
 from blueprints.wdbx_api import wdbx_api
 from config import Settings
 from lylex.db import LylexDB
+from lylex.brain import Brain
 from wdbx import WDBX
 from wdbx.metrics import start_metrics_server
+from functools import wraps
+import requests
 
 # --- Logging and Environment Setup ---
 load_dotenv()
@@ -98,10 +98,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+
 class User(UserMixin):
     """Flask-Login user class."""
+
     def __init__(self, username: str):
         self.id = username
+
 
 @login_manager.user_loader
 def load_user(user_id: str) -> Optional[User]:
@@ -110,28 +113,37 @@ def load_user(user_id: str) -> Optional[User]:
         return User(user_id)
     return None
 
+
 # --- JWT Authentication ---
 app.config["JWT_SECRET_KEY"] = settings.jwt_secret_key
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=settings.jwt_access_expires_minutes)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=settings.jwt_refresh_expires_days)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(
+    minutes=settings.jwt_access_expires_minutes
+)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(
+    days=settings.jwt_refresh_expires_days
+)
 jwt = JWTManager(app)
 
 revoked_tokens: Set[str] = set()
+
 
 @jwt.unauthorized_loader
 def missing_token_callback(error: str) -> Response:
     """Handle missing JWT."""
     return jsonify({"msg": error}), 401
 
+
 @jwt.invalid_token_loader
 def invalid_token_callback(error: str) -> Response:
     """Handle invalid JWT."""
     return jsonify({"msg": error}), 422
 
+
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header: dict, jwt_payload: dict) -> Response:
     """Handle expired JWT."""
     return jsonify({"msg": "Token has expired"}), 401
+
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header: dict, jwt_payload: dict) -> bool:
@@ -139,11 +151,13 @@ def check_if_token_revoked(jwt_header: dict, jwt_payload: dict) -> bool:
     jti = jwt_payload.get("jti")
     return jti in revoked_tokens
 
+
 def roles_required(roles: List[str]) -> Callable:
     """
     Decorator for role-based access control.
     Usage: @roles_required(['admin'])
     """
+
     def wrapper(fn: Callable) -> Callable:
         @wraps(fn)
         @jwt_required()
@@ -153,8 +167,11 @@ def roles_required(roles: List[str]) -> Callable:
             if not any(r in token_roles for r in roles):
                 return jsonify({"msg": "Forbidden"}), 403
             return fn(*args, **kwargs)
+
         return decorator
+
     return wrapper
+
 
 # --- Database and Plugin Initialization ---
 UPLOAD_FOLDER = settings.upload_folder
@@ -175,6 +192,8 @@ plugin_manager.init_app(app)
 
 # Monkey-patch PluginManager to include entry-point plugins
 _orig_find_plugins = plugin_manager.find_plugins
+
+
 def _find_plugins_with_entrypoints(self):
     found = _orig_find_plugins(self)
     eps = importlib.metadata.entry_points().select(group="myapp.plugins")
@@ -186,13 +205,13 @@ def _find_plugins_with_entrypoints(self):
         except Exception as e:
             logger.error(f"EP plugin load fail {ep.name}: {e}")
     return found
+
+
 plugin_manager.find_plugins = _find_plugins_with_entrypoints.__get__(plugin_manager)
 plugin_manager.setup_plugins()
 
 # --- LylexDB and Brain Learner ---
 lylex_db = LylexDB(vector_dimension=settings.wdbx_vector_dimension, embed_fn=None)
-
-from lylex.brain import Brain
 brain = Brain(
     model_name=getattr(settings, "brain_model_name", "gpt2"),
     backend=getattr(settings, "brain_backend", "pt"),
@@ -211,10 +230,12 @@ brain = Brain(
 # --- API Blueprints ---
 api = Blueprint("api", __name__, url_prefix="/api")
 
+
 @api.before_request
 def _api_require_jwt() -> Optional[Response]:
     """Enforce JWT on all API routes."""
     verify_jwt_in_request()
+
 
 @api.app_errorhandler(HTTPException)
 def _handle_http_exception(e: HTTPException) -> Response:
@@ -224,11 +245,13 @@ def _handle_http_exception(e: HTTPException) -> Response:
     response.content_type = "application/json"
     return response
 
+
 @api.app_errorhandler(Exception)
 def _handle_generic_exception(e: Exception) -> Response:
     """Return JSON for uncaught exceptions."""
     logger.exception(e)
     return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
+
 
 api.register_blueprint(wdbx_api, url_prefix="/wdbx")
 api.register_blueprint(lylex_api, url_prefix="/lylex")
@@ -238,19 +261,24 @@ app.register_blueprint(api)
 # --- Scheduler for Outdated Packages ---
 scheduler = BackgroundScheduler()
 
+
 def update_and_notify() -> int:
     """
     Record outdated packages and send notifications if configured.
     Returns the count of recorded packages.
     """
     from wdbx.update_utils import get_outdated_packages
+
     outdated = get_outdated_packages()
     if not outdated:
         return 0
     count = wdbx.record_outdated_packages()
-    lines = [f"{pkg['name']}: {pkg['version']} -> {pkg['latest_version']}" for pkg in outdated]
+    lines = [
+        f"{pkg['name']}: {pkg['version']} -> {pkg['latest_version']}"
+        for pkg in outdated
+    ]
     msg = "Outdated packages recorded:\n" + "\n".join(lines)
-    import requests
+
     if settings.slack_webhook_url:
         try:
             requests.post(settings.slack_webhook_url, json={"text": msg})
@@ -263,6 +291,7 @@ def update_and_notify() -> int:
             logger.error(f"Teams notification failed: {e}")
     return count
 
+
 scheduler.add_job(
     update_and_notify,
     "interval",
@@ -270,12 +299,15 @@ scheduler.add_job(
     id="outdated_job",
 )
 scheduler.start()
-logger.info(f"Scheduled periodic outdated package recording every {settings.update_interval_minutes} minutes")
+logger.info(
+    f"Scheduled periodic outdated package recording every {settings.update_interval_minutes} minutes"
+)
 initial_count = update_and_notify()
 logger.info(f"Initial outdated packages recorded into WDBX: {initial_count}")
 
 # --- UI Blueprint for Web and API ---
 ui = Blueprint("ui", __name__, template_folder="templates")
+
 
 @ui.before_request
 def require_login_ui() -> Optional[Response]:
@@ -283,15 +315,18 @@ def require_login_ui() -> Optional[Response]:
     if not current_user.is_authenticated:
         return redirect(url_for("login"))
 
+
 @app.route("/", methods=["GET"])
 def index() -> str:
     """Render the home page."""
     return render_template("index.html")
 
+
 @ui.route("/ui")
 def dashboard() -> str:
     """Render the dashboard page."""
     return render_template("dashboard.html")
+
 
 @ui.route("/api/vector/store", methods=["POST"])
 def api_store_vector() -> Response:
@@ -303,6 +338,7 @@ def api_store_vector() -> Response:
     except Exception as e:
         logger.error(f"Error storing vector: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @ui.route("/api/vector/search", methods=["POST"])
 def api_search_vector() -> Response:
@@ -316,13 +352,14 @@ def api_search_vector() -> Response:
         logger.error(f"Error searching vector: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/artifact/store", methods=["POST"])
 def api_store_artifact() -> Response:
     """Store a model artifact file."""
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
     f = request.files["file"]
-    fname = secure_filename(f.filename)
+    secure_filename(f.filename)
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         f.save(tmp.name)
         meta = {}
@@ -337,12 +374,16 @@ def api_store_artifact() -> Response:
             logger.error(f"Error storing artifact: {e}")
             return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/artifact/load/<int:artifact_id>")
 def api_load_artifact(artifact_id: int) -> Response:
     """Download a stored model artifact."""
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         wdbx.load_model(artifact_id, tmp.name)
-        return send_file(tmp.name, as_attachment=True, download_name=f"artifact_{artifact_id}.bin")
+        return send_file(
+            tmp.name, as_attachment=True, download_name=f"artifact_{artifact_id}.bin"
+        )
+
 
 @ui.route("/api/lylex/store_interaction", methods=["POST"])
 def api_store_interaction() -> Response:
@@ -359,17 +400,21 @@ def api_store_interaction() -> Response:
         logger.error(f"Error storing interaction: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/search_interactions", methods=["POST"])
 def api_search_interactions() -> Response:
     """Search for similar interactions."""
     try:
         data = request.get_json(force=True)
-        raw = lylex_db.search_interactions(data.get("prompt", ""), limit=data.get("limit", 5))
+        raw = lylex_db.search_interactions(
+            data.get("prompt", ""), limit=data.get("limit", 5)
+        )
         results = [{"id": r[0], "score": r[1], "metadata": r[2]} for r in raw]
         return jsonify({"results": results})
     except Exception as e:
         logger.error(f"Error searching interactions: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @ui.route("/api/lylex/neural_backtrace", methods=["POST"])
 def api_neural_backtrace() -> Response:
@@ -382,6 +427,7 @@ def api_neural_backtrace() -> Response:
         logger.error(f"Error in neural backtrace: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/vector/bulk_store", methods=["POST"])
 def api_bulk_store_vectors() -> Response:
     """Bulk store vectors."""
@@ -391,6 +437,7 @@ def api_bulk_store_vectors() -> Response:
     vids = wdbx.bulk_store(pairs)
     return jsonify({"vector_ids": vids})
 
+
 @ui.route("/api/vector/bulk_search", methods=["POST"])
 def api_bulk_search_vectors() -> Response:
     """Bulk search vectors."""
@@ -399,6 +446,7 @@ def api_bulk_search_vectors() -> Response:
     limit = data.get("limit", 10)
     results = wdbx.bulk_search(vectors, limit=limit)
     return jsonify({"results": results})
+
 
 # --- Self-update and Git endpoints ---
 @ui.route("/api/wdbx/ai_update", methods=["POST"])
@@ -418,6 +466,7 @@ def api_wdbx_ai_update() -> Response:
         logger.error(f"Error in WDBX AI update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/ai_update", methods=["POST"])
 def api_lylex_ai_update() -> Response:
     """AI-driven code update for Lylex."""
@@ -435,6 +484,7 @@ def api_lylex_ai_update() -> Response:
         logger.error(f"Error in Lylex AI update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/wdbx/git_update", methods=["POST"])
 def api_wdbx_git_update() -> Response:
     """Git update for WDBX."""
@@ -449,6 +499,7 @@ def api_wdbx_git_update() -> Response:
         logger.error(f"Error in WDBX git update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/git_update", methods=["POST"])
 def api_lylex_git_update() -> Response:
     """Git update for Lylex."""
@@ -462,6 +513,7 @@ def api_lylex_git_update() -> Response:
     except Exception as e:
         logger.error(f"Error in Lylex git update: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @ui.route("/api/wdbx/schedule_self_update", methods=["POST"])
 def api_wdbx_schedule_self_update() -> Response:
@@ -478,6 +530,7 @@ def api_wdbx_schedule_self_update() -> Response:
         logger.error(f"Error scheduling WDBX self-update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/schedule_self_update", methods=["POST"])
 def api_lylex_schedule_self_update() -> Response:
     """Schedule self-update for Lylex."""
@@ -493,6 +546,7 @@ def api_lylex_schedule_self_update() -> Response:
         logger.error(f"Error scheduling Lylex self-update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/wdbx/stop_self_update", methods=["POST"])
 def api_wdbx_stop_self_update() -> Response:
     """Stop WDBX self-update."""
@@ -503,6 +557,7 @@ def api_wdbx_stop_self_update() -> Response:
         logger.error(f"Error stopping WDBX self-update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/stop_self_update", methods=["POST"])
 def api_lylex_stop_self_update() -> Response:
     """Stop Lylex self-update."""
@@ -512,6 +567,7 @@ def api_lylex_stop_self_update() -> Response:
     except Exception as e:
         logger.error(f"Error stopping Lylex self-update: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @ui.route("/api/wdbx/rollback_update", methods=["POST"])
 def api_wdbx_rollback_update() -> Response:
@@ -527,6 +583,7 @@ def api_wdbx_rollback_update() -> Response:
         logger.error(f"Error rolling back WDBX update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/lylex/rollback_update", methods=["POST"])
 def api_lylex_rollback_update() -> Response:
     """Rollback Lylex update."""
@@ -541,6 +598,7 @@ def api_lylex_rollback_update() -> Response:
         logger.error(f"Error rolling back Lylex update: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/updates")
 def api_updates() -> Response:
     """Return stored outdated package metadata."""
@@ -551,6 +609,7 @@ def api_updates() -> Response:
         logger.error(f"Error fetching updates: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/updates")
 def view_updates() -> str:
     """Render a simple HTML page listing outdated packages."""
@@ -560,6 +619,7 @@ def view_updates() -> str:
         flash(f"Failed to load updates: {e}")
         return redirect(url_for("index"))
     return render_template("updates.html", packages=packages)
+
 
 # --- Scheduler Control Endpoints ---
 @ui.route("/api/scheduler/pause", methods=["POST"])
@@ -572,6 +632,7 @@ def api_scheduler_pause() -> Response:
         logger.error(f"Error pausing scheduler: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @ui.route("/api/scheduler/resume", methods=["POST"])
 def api_scheduler_resume() -> Response:
     """Resume the outdated package scheduler."""
@@ -581,6 +642,7 @@ def api_scheduler_resume() -> Response:
     except Exception as e:
         logger.error(f"Error resuming scheduler: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @ui.route("/api/scheduler/interval", methods=["POST"])
 def api_scheduler_set_interval() -> Response:
@@ -594,8 +656,10 @@ def api_scheduler_set_interval() -> Response:
         logger.error(f"Error setting scheduler interval: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 app.register_blueprint(ui)
 app.register_blueprint(plugin_admin)
+
 
 # --- Authentication Routes ---
 @app.route("/login", methods=["GET", "POST"])
@@ -617,12 +681,14 @@ def login() -> str:
         flash("Invalid credentials", "danger")
     return render_template("login.html")
 
+
 @app.route("/logout")
 @login_required
 def logout() -> Response:
     """Logout the current user."""
     logout_user()
     return redirect(url_for("login"))
+
 
 # --- JWT Authentication Endpoints ---
 @limiter.limit("5 per minute")
@@ -638,10 +704,15 @@ def auth_login() -> Response:
         and check_password_hash(settings.admin_password_hash, password)
     ):
         roles = settings.admin_roles if username == settings.admin_username else []
-        access = create_access_token(identity=username, additional_claims={"roles": roles})
-        refresh = create_refresh_token(identity=username, additional_claims={"roles": roles})
+        access = create_access_token(
+            identity=username, additional_claims={"roles": roles}
+        )
+        refresh = create_refresh_token(
+            identity=username, additional_claims={"roles": roles}
+        )
         return jsonify(access_token=access, refresh_token=refresh)
     return jsonify({"msg": "Bad username or password"}), 401
+
 
 @app.route("/auth/refresh", methods=["POST"])
 @jwt_required(refresh=True)
@@ -650,8 +721,11 @@ def auth_refresh() -> Response:
     identity = get_jwt_identity()
     claims = get_jwt()
     roles = claims.get("roles", [])
-    new_access = create_access_token(identity=identity, additional_claims={"roles": roles})
+    new_access = create_access_token(
+        identity=identity, additional_claims={"roles": roles}
+    )
     return jsonify(access_token=new_access)
+
 
 @app.route("/auth/logout/access", methods=["DELETE"])
 @jwt_required()
@@ -661,6 +735,7 @@ def logout_access() -> Response:
     revoked_tokens.add(jti)
     return jsonify({"msg": "Access token revoked"}), 200
 
+
 @app.route("/auth/logout/refresh", methods=["DELETE"])
 @jwt_required(refresh=True)
 def logout_refresh() -> Response:
@@ -668,6 +743,7 @@ def logout_refresh() -> Response:
     jti = get_jwt()["jti"]
     revoked_tokens.add(jti)
     return jsonify({"msg": "Refresh token revoked"}), 200
+
 
 # --- SSL Socket Server Helper ---
 def handle_client(conn: socket.socket) -> None:
@@ -682,6 +758,7 @@ def handle_client(conn: socket.socket) -> None:
             pass
         conn.close()
 
+
 def run_ssl_socket_server() -> None:
     """Start a simple SSL-wrapped TCP echo server if configured."""
     if settings.socket_port and settings.ssl_certfile and settings.ssl_keyfile:
@@ -690,8 +767,12 @@ def run_ssl_socket_server() -> None:
         bindsocket.bind((settings.host, settings.socket_port))
         bindsocket.listen(5)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(certfile=str(settings.ssl_certfile), keyfile=str(settings.ssl_keyfile))
-        logger.info(f"SSL socket server listening on {settings.host}:{settings.socket_port}")
+        context.load_cert_chain(
+            certfile=str(settings.ssl_certfile), keyfile=str(settings.ssl_keyfile)
+        )
+        logger.info(
+            f"SSL socket server listening on {settings.host}:{settings.socket_port}"
+        )
         while True:
             newsocket, addr = bindsocket.accept()
             try:
@@ -702,6 +783,7 @@ def run_ssl_socket_server() -> None:
                 continue
             threading.Thread(target=handle_client, args=(conn,), daemon=True).start()
 
+
 # --- Main Entrypoint ---
 if __name__ == "__main__":
     try:
@@ -709,9 +791,12 @@ if __name__ == "__main__":
         ssl_context = None
         if settings.ssl_certfile and settings.ssl_keyfile:
             ssl_context = (str(settings.ssl_certfile), str(settings.ssl_keyfile))
-        app.run(host=settings.host, port=settings.port, ssl_context=ssl_context, debug=True)
+        app.run(
+            host=settings.host, port=settings.port, ssl_context=ssl_context, debug=True
+        )
     finally:
         wdbx.shutdown()
+
 
 # --- Anchors and Metrics Endpoints ---
 @app.route("/anchors")
@@ -724,11 +809,13 @@ def anchors() -> str:
         entries = []
     return render_template("anchors.html", anchors=entries)
 
+
 @app.route("/metrics")
 def metrics_endpoint() -> Response:
     """Expose Prometheus metrics."""
     data = generate_latest()
     return Response(data, mimetype=CONTENT_TYPE_LATEST)
+
 
 # --- Brain Control Endpoints ---
 @api.route("/brain/status")
@@ -737,11 +824,13 @@ def api_brain_status() -> Response:
     job = brain.scheduler.get_job(f"brain_{brain.model_name}")
     return jsonify({"scheduled": bool(job)})
 
+
 @api.route("/brain/stop", methods=["POST"])
 def api_brain_stop() -> Response:
     """Stop the Brain autonomous learning."""
     brain.stop()
     return jsonify({"status": "stopped"})
+
 
 @api.route("/brain/start", methods=["POST"])
 def api_brain_start() -> Response:
