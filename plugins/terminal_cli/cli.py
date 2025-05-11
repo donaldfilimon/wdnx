@@ -25,9 +25,7 @@ bp = Blueprint("terminal_cli", __name__, cli_group="term")
 )
 @click.option("--skip-vision", is_flag=True, help="Skip the vision LLM stage.")
 @click.option("--extract-tables", is_flag=True, help="Extract tables from PDF pages.")
-@click.option(
-    "--encrypt-html", is_flag=True, help="Encrypt the output HTML file using AES-GCM."
-)
+@click.option("--encrypt-html", is_flag=True, help="Encrypt the output HTML file using AES-GCM.")
 @click.option(
     "--anchor-hash",
     "anchor_hash_flag",
@@ -93,12 +91,8 @@ def check_updates(record):
 
 
 @bp.cli.command("generate-docs")
-@click.option(
-    "--serve", is_flag=True, help="Run local documentation server instead of building."
-)
-@click.option(
-    "--clean", is_flag=True, help="Clean site directory before building docs."
-)
+@click.option("--serve", is_flag=True, help="Run local documentation server instead of building.")
+@click.option("--clean", is_flag=True, help="Clean site directory before building docs.")
 @with_appcontext
 def generate_docs(serve, clean):
     """
@@ -129,9 +123,7 @@ def generate_docs(serve, clean):
     default=".",
     help="Repository directory",
 )
-@click.option(
-    "--module-paths", "module_paths", multiple=True, help="Module paths for self-update"
-)
+@click.option("--module-paths", "module_paths", multiple=True, help="Module paths for self-update")
 @with_appcontext
 def self_update(wdbx_flag, lylex_flag, interval, repo_dir, module_paths):
     """
@@ -145,9 +137,7 @@ def self_update(wdbx_flag, lylex_flag, interval, repo_dir, module_paths):
             repo_dir=repo_dir,
             module_paths=list(module_paths) or None,
         )
-        click.echo(
-            f"Scheduled WDBX self-update every {interval} minutes for {repo_dir}"
-        )
+        click.echo(f"Scheduled WDBX self-update every {interval} minutes for {repo_dir}")
     if lylex_flag:
         from app import lylex_db
 
@@ -156,22 +146,14 @@ def self_update(wdbx_flag, lylex_flag, interval, repo_dir, module_paths):
             repo_dir=repo_dir,
             module_paths=list(module_paths) or None,
         )
-        click.echo(
-            f"Scheduled Lylex self-update every {interval} minutes for {repo_dir}"
-        )
+        click.echo(f"Scheduled Lylex self-update every {interval} minutes for {repo_dir}")
     if not wdbx_flag and not lylex_flag:
-        click.echo(
-            "No component specified for self-update. Use --wdbx or --lylex.", err=True
-        )
+        click.echo("No component specified for self-update. Use --wdbx or --lylex.", err=True)
 
 
 @bp.cli.command("git-update")
-@click.option(
-    "--wdbx", "wdbx_flag", is_flag=True, help="Perform immediate WDBX git update"
-)
-@click.option(
-    "--lylex", "lylex_flag", is_flag=True, help="Perform immediate Lylex git update"
-)
+@click.option("--wdbx", "wdbx_flag", is_flag=True, help="Perform immediate WDBX git update")
+@click.option("--lylex", "lylex_flag", is_flag=True, help="Perform immediate Lylex git update")
 @click.option(
     "--local-dir",
     "local_dir",
@@ -179,9 +161,7 @@ def self_update(wdbx_flag, lylex_flag, interval, repo_dir, module_paths):
     default=".",
     help="Local repository directory",
 )
-@click.option(
-    "--module-paths", "module_paths", multiple=True, help="Module paths for git update"
-)
+@click.option("--module-paths", "module_paths", multiple=True, help="Module paths for git update")
 @with_appcontext
 def git_update_cli(wdbx_flag, lylex_flag, local_dir, module_paths):
     """
@@ -198,6 +178,4 @@ def git_update_cli(wdbx_flag, lylex_flag, local_dir, module_paths):
         lylex_db.git_update(local_dir, module_paths=list(module_paths) or None)
         click.echo(f"Performed Lylex git update in {local_dir}")
     if not wdbx_flag and not lylex_flag:
-        click.echo(
-            "No component specified for git update. Use --wdbx or --lylex.", err=True
-        )
+        click.echo("No component specified for git update. Use --wdbx or --lylex.", err=True)

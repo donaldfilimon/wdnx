@@ -4,7 +4,7 @@ blocks.py - DataBlock definition for WDBX chain.
 
 import hashlib
 import json
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class DataBlock:
@@ -15,7 +15,7 @@ class DataBlock:
     def __init__(
         self,
         vectors: List[List[float]],
-        metadata: List[Dict],
+        metadata: List[Dict[str, Any]],
         prev_hash: Optional[str] = None,
     ):
         self.vectors = vectors

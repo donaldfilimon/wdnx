@@ -12,10 +12,22 @@ from wdbx import WDBX
 from wdbx.self_update import CodeUpdater
 from wdbx.self_update_advanced import AdvancedUpdater
 
-from .ai import LylexModelHandler  # For future use, or if it develops an embedding API
-from .embeddings import EmbeddingHandler
+try:
+    from .ai import (  # For future use, or if it develops an embedding API
+        LylexModelHandler,
+    )
+except Exception:
+    LylexModelHandler = None
+
+try:
+    from .embeddings import EmbeddingHandler
+except Exception:
+    EmbeddingHandler = None
 
 logger = logging.getLogger(__name__)
+
+InteractionResult = Tuple[int, float, Dict[str, Any]]
+SearchResults = List[InteractionResult]
 
 
 class LylexDB:
@@ -54,17 +66,10 @@ class LylexDB:
         self.model_handler = model_handler  # Stored for future use
 
         # Warn if vector_dimension seems mismatched with a provided OpenAI EmbeddingHandler
-        if (
-            self.embedding_handler
-            and self.embedding_handler.model == "text-embedding-ada-002"
-        ):
+        if self.embedding_handler and self.embedding_handler.model == "text-embedding-ada-002":
             openai_ada_dim = 1536
             if self.vector_dimension != openai_ada_dim:
-                logger.warning(
-                    f"LylexDB initialized with vector_dimension={self.vector_dimension}, "
-                    f"but provided EmbeddingHandler uses '{self.embedding_handler.model}' which has dimension {openai_ada_dim}. "
-                    f"Ensure dimensions match to avoid errors or truncation."
-                )
+                logger.warning(f"LylexDB initialized with vector_dimension={self.vector_dimension}, " f"but provided EmbeddingHandler uses '{self.embedding_handler.model}' which has dimension {openai_ada_dim}. " f"Ensure dimensions match to avoid errors or truncation.")
 
         # Initialize WDBX client with optional sharding
         client_args: Dict[str, Any] = {
@@ -92,16 +97,11 @@ class LylexDB:
             try:
                 vector = self.embedding_handler.embed([prompt])[0]
                 if len(vector) != self.vector_dimension:
-                    logger.error(
-                        f"OpenAI EmbeddingHandler returned vector of dimension {len(vector)}, "
-                        f"but LylexDB is configured for {self.vector_dimension}. Falling back to zero-vector."
-                    )
+                    logger.error(f"OpenAI EmbeddingHandler returned vector of dimension {len(vector)}, " f"but LylexDB is configured for {self.vector_dimension}. Falling back to zero-vector.")
                     return [0.0] * self.vector_dimension
                 return vector
             except Exception as e:
-                logger.error(
-                    f"Error using EmbeddingHandler: {e}. Falling back to zero-vector."
-                )
+                logger.error(f"Error using EmbeddingHandler: {e}. Falling back to zero-vector.")
                 return [0.0] * self.vector_dimension
 
         # Use model_handler for embedding if provided
@@ -109,24 +109,17 @@ class LylexDB:
             try:
                 vector = self.model_handler.get_embedding(prompt)
                 if len(vector) != self.vector_dimension:
-                    logger.error(
-                        f"ModelHandler returned vector of dimension {len(vector)}, "
-                        f"but LylexDB is configured for {self.vector_dimension}. Falling back to zero-vector."
-                    )
+                    logger.error(f"ModelHandler returned vector of dimension {len(vector)}, " f"but LylexDB is configured for {self.vector_dimension}. Falling back to zero-vector.")
                     return [0.0] * self.vector_dimension
                 return vector
             except Exception as e:
-                logger.error(
-                    f"Error using ModelHandler for embedding: {e}. Falling back to zero-vector."
-                )
+                logger.error(f"Error using ModelHandler for embedding: {e}. Falling back to zero-vector.")
                 return [0.0] * self.vector_dimension
 
         # Fallback to zero-vector
         return [0.0] * self.vector_dimension
 
-    def store_interaction(
-        self, prompt: str, response: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> int:
+    def store_interaction(self, prompt: str, response: str, metadata: Optional[Dict[str, Any]] = None) -> int:
         """
         Store a prompt-response interaction in the vector database.
 
@@ -144,20 +137,13 @@ class LylexDB:
             return self.client.distributed_store(prompt, vector, metadata)
         return self.client.store(vector, metadata)
 
-    def bulk_store_interactions(
-        self, items: List[Tuple[str, str, Optional[Dict[str, Any]]]]
-    ) -> List[int]:
+    def bulk_store_interactions(self, items: List[Tuple[str, str, Optional[Dict[str, Any]]]]) -> List[int]:
         """
         Store multiple prompt-response interactions in bulk. Returns list of stored vector IDs.
         """
-        return [
-            self.store_interaction(prompt, response, metadata)
-            for prompt, response, metadata in items
-        ]
+        return [self.store_interaction(prompt, response, metadata) for prompt, response, metadata in items]
 
-    def search_interactions(
-        self, prompt: str, limit: int = 5
-    ) -> List[Tuple[int, float, Dict[str, Any]]]:
+    def search_interactions(self, prompt: str, limit: int = 5) -> SearchResults:
         """
         Retrieve similar interactions based on prompt similarity.
 
@@ -172,9 +158,7 @@ class LylexDB:
             return self.client.distributed_search(prompt, vector, limit=limit)
         return self.client.search(vector, limit=limit)
 
-    def broadcast_search_interactions(
-        self, prompt: str, limit: int = 5
-    ) -> Dict[str, List[Tuple[int, float, Dict[str, Any]]]]:
+    def broadcast_search_interactions(self, prompt: str, limit: int = 5) -> Dict[str, SearchResults]:
         """
         Broadcast search across all shards, returning per-shard results.
         """
@@ -189,9 +173,7 @@ class LylexDB:
         """Delete a stored interaction by ID."""
         return self.client.delete(interaction_id)
 
-    def update_interaction_metadata(
-        self, interaction_id: int, metadata: Dict[str, Any]
-    ) -> bool:
+    def update_interaction_metadata(self, interaction_id: int, metadata: Dict[str, Any]) -> bool:
         """Update metadata for a stored interaction."""
         return self.client.update_metadata(interaction_id, metadata)
 
@@ -222,9 +204,7 @@ class LylexDB:
         vector = [0.0] * self.vector_dimension
         raw = self.client.search(vector, limit=limit)
         # Format as list of dicts
-        return [
-            {"id": _id, "score": score, "metadata": meta} for _id, score, meta in raw
-        ]
+        return [{"id": _id, "score": score, "metadata": meta} for _id, score, meta in raw]
 
     def begin_transaction(self) -> Any:
         """
@@ -266,9 +246,7 @@ class LylexDB:
         self.client.shutdown()
         logger.info("LylexDB WDBX client shutdown.")
 
-    def store_model(
-        self, file_path: str, metadata: Optional[Dict[str, Any]] = None
-    ) -> int:
+    def store_model(self, file_path: str, metadata: Optional[Dict[str, Any]] = None) -> int:
         """
         Store a serialized model artifact via the underlying WDBX client.
 
@@ -322,9 +300,7 @@ class LylexDB:
         """
         CodeUpdater().reload_module(module_name)
 
-    def schedule_self_update(
-        self, interval: int, repo_dir: str, module_paths: Optional[List[str]] = None
-    ) -> None:
+    def schedule_self_update(self, interval: int, repo_dir: str, module_paths: Optional[List[str]] = None) -> None:
         """
         Schedule periodic Git-based code updates for Lylex modules.
         """
@@ -337,18 +313,14 @@ class LylexDB:
         """
         AdvancedUpdater().stop()
 
-    def git_update(
-        self, local_dir: str, module_paths: Optional[List[str]] = None
-    ) -> None:
+    def git_update(self, local_dir: str, module_paths: Optional[List[str]] = None) -> None:
         """
         Perform an immediate Git pull and apply patches.
         """
         adv = AdvancedUpdater(repo_url=None)
         adv.update_from_git(local_dir, module_paths)
 
-    def rollback_update(
-        self, file_path: str, backup_file: Optional[str] = None
-    ) -> None:
+    def rollback_update(self, file_path: str, backup_file: Optional[str] = None) -> None:
         """
         Roll back a patched file.
         """
@@ -390,6 +362,4 @@ class LylexDB:
         vector = [0.0] * self.vector_dimension
         raw_results = self.client.search(vector, limit=limit)
         # Filter entries that have 'package' metadata
-        return [
-            metadata for _id, _score, metadata in raw_results if "package" in metadata
-        ]
+        return [metadata for _id, _score, metadata in raw_results if "package" in metadata]

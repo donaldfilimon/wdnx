@@ -47,9 +47,7 @@ def with_retry(func: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator to retry operations with exponential backoff."""
     return retry(
         stop=stop_after_attempt(RETRY_ATTEMPTS),
-        wait=wait_exponential(
-            multiplier=RETRY_WAIT_MULTIPLIER, min=RETRY_WAIT_MIN, max=RETRY_WAIT_MAX
-        ),
+        wait=wait_exponential(multiplier=RETRY_WAIT_MULTIPLIER, min=RETRY_WAIT_MIN, max=RETRY_WAIT_MAX),
         reraise=True,
     )(func)
 
@@ -107,9 +105,7 @@ def cosine_similarity(v1: Sequence[float], v2: Sequence[float]) -> float:
     return float(np.dot(a, b) / denom)
 
 
-def bulk_similarity(
-    vectors: Sequence[Sequence[float]], queries: Sequence[Sequence[float]]
-) -> np.ndarray:
+def bulk_similarity(vectors: Sequence[Sequence[float]], queries: Sequence[Sequence[float]]) -> np.ndarray:
     """
     Compute similarity matrix between a set of stored vectors and query vectors using cosine similarity.
     Returns a 2D numpy array of shape (len(queries), len(vectors)).

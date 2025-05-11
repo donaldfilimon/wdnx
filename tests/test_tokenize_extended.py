@@ -28,9 +28,7 @@ def test_tokenize_with_tiktoken(monkeypatch):
 
     monkeypatch.setattr("lylex.ai.LylexModelHandler", BadHandler)
     # Insert dummy tiktoken module
-    dummy_enc = types.SimpleNamespace(
-        encode=lambda text: [0, 1], decode=lambda token_list: f"tok{token_list[0]}"
-    )
+    dummy_enc = types.SimpleNamespace(encode=lambda text: [0, 1], decode=lambda token_list: f"tok{token_list[0]}")
     dummy_tiktoken = types.SimpleNamespace(get_encoding=lambda name: dummy_enc)
     monkeypatch.setitem(sys.modules, "tiktoken", dummy_tiktoken)
     tokens = tokenize("ab")

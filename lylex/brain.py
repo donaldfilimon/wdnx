@@ -14,15 +14,9 @@ from .training import TrainingManager
 
 logger = logging.getLogger(__name__)
 # Metrics for observability
-_cycles_counter = Counter(
-    "brain_learning_cycles_total", "Total autonomous learning cycles"
-)
-_new_interactions_counter = Counter(
-    "brain_new_interactions_total", "Total new interactions learned by Brain"
-)
-_errors_counter = Counter(
-    "brain_learning_errors_total", "Total errors during Brain learning"
-)
+_cycles_counter = Counter("brain_learning_cycles_total", "Total autonomous learning cycles")
+_new_interactions_counter = Counter("brain_new_interactions_total", "Total new interactions learned by Brain")
+_errors_counter = Counter("brain_learning_errors_total", "Total errors during Brain learning")
 
 
 class Brain:
@@ -52,9 +46,7 @@ class Brain:
         self.model_name = model_name
         self.backend = backend
         # Initialize memory DB and training parameters
-        self.memory_db = memory_db or LylexDB(
-            vector_dimension=memory_db.vector_dimension if memory_db else 384
-        )
+        self.memory_db = memory_db or LylexDB(vector_dimension=memory_db.vector_dimension if memory_db else 384)
         self.memory_limit = memory_limit
         self.train_epochs = train_epochs
         self.batch_size = batch_size
@@ -96,9 +88,7 @@ class Brain:
             replace_existing=True,
         )
         self.scheduler.start()
-        logger.info(
-            f"Brain initialized: autonomous learning every {interval_minutes} minutes."
-        )
+        logger.info(f"Brain initialized: autonomous learning every {interval_minutes} minutes.")
 
     def _extract_trace_features(self, t: np.ndarray, v: np.ndarray) -> dict:
         """Extract basic features from a simulation trace."""
@@ -107,9 +97,7 @@ class Brain:
                 "mean_value": None,
                 "max_value": None,
                 "min_value": None,
-                "duration_ms": (
-                    float(t[-1] - t[0]) if t is not None and len(t) > 1 else 0
-                ),
+                "duration_ms": (float(t[-1] - t[0]) if t is not None and len(t) > 1 else 0),
                 "num_points": 0,
             }
         return {
@@ -133,10 +121,7 @@ class Brain:
                 logger.info("Brain: no new interactions for learning.")
                 return
             new_entries.sort(key=lambda e: e["id"])
-            texts = [
-                f"{e['metadata'].get('prompt', '')}\n{e['metadata'].get('response', '')}"
-                for e in new_entries
-            ]
+            texts = [f"{e['metadata'].get('prompt', '')}\n{e['metadata'].get('response', '')}" for e in new_entries]
             dataset = Dataset.from_dict({"text": texts})
             # Fine-tune model on new interactions
             self.training_manager.train(
@@ -217,9 +202,7 @@ class Brain:
         if not self.simulator:
             raise RuntimeError("No NEURON simulator configured in Brain")
 
-        results = self.simulator.sweep_parameter(
-            param_name, values, param_name2, values2, ref=ref, t_ref=t_ref
-        )
+        results = self.simulator.sweep_parameter(param_name, values, param_name2, values2, ref=ref, t_ref=t_ref)
 
         if param_name2 and values2:  # 2D sweep
             for val1, nested_results in results.items():

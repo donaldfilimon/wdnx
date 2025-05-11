@@ -41,9 +41,7 @@ try:
 except ImportError:
     wdbx = None  # type: ignore [assignment]
     # Logger might not be configured yet, so use a default logger for this warning
-    logging.getLogger(__name__).warning(
-        "wdbx module not found; remote PDF download will be disabled."
-    )
+    logging.getLogger(__name__).warning("wdbx module not found; remote PDF download will be disabled.")
 
 # Ollama / LM Studio endpoint (override via env var)
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
@@ -53,17 +51,13 @@ DEFAULT_VISION_PROMPT = os.getenv(
     "VISION_PROMPT",
     "Convert the content of PDF page {page} to HTML. Preserve structure and formatting as much as possible.",
 )
-DEFAULT_TEXT_PROMPT = os.getenv(
-    "TEXT_PROMPT", "Convert the following text into structured HTML:"
-)
+DEFAULT_TEXT_PROMPT = os.getenv("TEXT_PROMPT", "Convert the following text into structured HTML:")
 
 # Logger setup
 logger = logging.getLogger(__name__)
 
 # More specific types for Hugging Face models and tokenizers
-HuggingFaceModel = Union[
-    PreTrainedModel, Any
-]  # Using Any for Flax model type if not directly PreTrainedModel
+HuggingFaceModel = Union[PreTrainedModel, Any]  # Using Any for Flax model type if not directly PreTrainedModel
 HuggingFaceTokenizer = Union[PreTrainedTokenizerBase, Any]  # Using Any for flexibility
 
 
@@ -111,9 +105,7 @@ class LocalTextModelHandler:
         self._initialized = True
         logger.info("LocalTextModelHandler initialized with backend: %s", self.backend)
 
-    def get_model_and_tokenizer(
-        self, model_name: str
-    ) -> Tuple[HuggingFaceModel, HuggingFaceTokenizer]:
+    def get_model_and_tokenizer(self, model_name: str) -> Tuple[HuggingFaceModel, HuggingFaceTokenizer]:
         """
         Load (or return cached) model and tokenizer for the given Hugging Face model name.
 
@@ -127,23 +119,13 @@ class LocalTextModelHandler:
             Exception: If loading the model or tokenizer fails.
             RuntimeError: If the model or tokenizer is not available after attempting to load.
         """
-        if (
-            self.current_model_name != model_name
-            or self.model is None
-            or self.tokenizer is None
-        ):
-            logger.info(
-                "Loading local text model '%s' (backend=%s).", model_name, self.backend
-            )
+        if self.current_model_name != model_name or self.model is None or self.tokenizer is None:
+            logger.info("Loading local text model '%s' (backend=%s).", model_name, self.backend)
             try:
-                self.tokenizer = AutoTokenizer.from_pretrained(
-                    model_name, use_fast=True
-                )
+                self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
                 if self.backend == "jax":
                     # JAX-specific imports are conditional to avoid hard dependency if not used
-                    self.model = FlaxAutoModelForCausalLM.from_pretrained(
-                        model_name, dtype=jnp.float32
-                    )
+                    self.model = FlaxAutoModelForCausalLM.from_pretrained(model_name, dtype=jnp.float32)
                 else:  # PyTorch backend
                     self.model = AutoModelForCausalLM.from_pretrained(model_name)
                 self.current_model_name = model_name
@@ -157,9 +139,7 @@ class LocalTextModelHandler:
 
         if self.model is None or self.tokenizer is None:
             # This case should ideally not be reached if exceptions are handled correctly
-            raise RuntimeError(
-                f"Model or tokenizer for '{model_name}' is not available after load attempt."
-            )
+            raise RuntimeError(f"Model or tokenizer for '{model_name}' is not available after load attempt.")
         return self.model, self.tokenizer
 
 
@@ -203,9 +183,7 @@ def call_ollama_vision(image: Image.Image, prompt: str, model: str) -> str:
     try:
         data = response.json()
     except requests.exceptions.JSONDecodeError as err:  # More specific exception
-        raise RuntimeError(
-            f"Ollama vision API returned invalid JSON: {err}. Response text: {response.text[:500]}"
-        ) from err
+        raise RuntimeError(f"Ollama vision API returned invalid JSON: {err}. Response text: {response.text[:500]}") from err
     return data.get("response", "").strip()
 
 
@@ -248,22 +226,14 @@ def image_to_html_with_ollama(
     # Attempt 1: Ollama Vision Model (skipped if skip_vision=True)
     if not skip_vision:
         try:
-            logger.info(
-                f"Page {page_num}: Requesting conversion from vision model '{vision_model_name}'."
-            )
+            logger.info(f"Page {page_num}: Requesting conversion from vision model '{vision_model_name}'.")
             html_content = call_ollama_vision(image, prompt, vision_model_name)
             if not html_content:
-                logger.warning(
-                    f"Page {page_num}: Vision model '{vision_model_name}' returned empty content."
-                )
+                logger.warning(f"Page {page_num}: Vision model '{vision_model_name}' returned empty content.")
         except Exception as vision_err:
-            logger.warning(
-                f"Page {page_num}: Vision model '{vision_model_name}' failed: {vision_err}."
-            )
+            logger.warning(f"Page {page_num}: Vision model '{vision_model_name}' failed: {vision_err}.")
     else:
-        logger.info(
-            f"Page {page_num}: Vision model stage skipped per skip_vision flag."
-        )
+        logger.info(f"Page {page_num}: Vision model stage skipped per skip_vision flag.")
 
     # Fallback if vision model did not produce content
     if not html_content:
@@ -278,29 +248,13 @@ def image_to_html_with_ollama(
             # Attempt 2: Local Text-to-HTML Model (if configured)
             if text_model_name and text_model_name.lower() != "none":
                 try:
-                    logger.info(
-                        f"Page {page_num}: Attempting conversion with local text model '{text_model_name}'."
-                    )
-                    local_model, tokenizer = (
-                        _local_text_model_handler.get_model_and_tokenizer(
-                            text_model_name
-                        )
-                    )
+                    logger.info(f"Page {page_num}: Attempting conversion with local text model '{text_model_name}'.")
+                    local_model, tokenizer = _local_text_model_handler.get_model_and_tokenizer(text_model_name)
 
-                    full_prompt = (
-                        text_prompt_template.format(text=raw_text)
-                        if "{text}" in text_prompt_template
-                        else f"{text_prompt_template}\n\n{raw_text}"
-                    )
+                    full_prompt = text_prompt_template.format(text=raw_text) if "{text}" in text_prompt_template else f"{text_prompt_template}\n\n{raw_text}"
 
-                    tokenizer_max_len_attr = getattr(
-                        local_model.config, "n_positions", 1024
-                    )
-                    tokenizer_max_len = (
-                        int(tokenizer_max_len_attr)
-                        if isinstance(tokenizer_max_len_attr, (int, float))
-                        else 1024
-                    )
+                    tokenizer_max_len_attr = getattr(local_model.config, "n_positions", 1024)
+                    tokenizer_max_len = int(tokenizer_max_len_attr) if isinstance(tokenizer_max_len_attr, (int, float)) else 1024
 
                     if _local_text_model_handler.backend == "jax":
                         inputs = tokenizer(full_prompt, return_tensors="jax", truncation=True, max_length=tokenizer_max_len)  # type: ignore
@@ -318,27 +272,17 @@ def image_to_html_with_ollama(
                     html_content = decoded_html_list[0] if decoded_html_list else ""
 
                     if html_content:
-                        logger.info(
-                            f"Page {page_num}: Successfully converted OCR text using local model '{text_model_name}'."
-                        )
+                        logger.info(f"Page {page_num}: Successfully converted OCR text using local model '{text_model_name}'.")
                     else:
-                        logger.warning(
-                            f"Page {page_num}: Local model '{text_model_name}' returned empty content."
-                        )
+                        logger.warning(f"Page {page_num}: Local model '{text_model_name}' returned empty content.")
                 except Exception as local_err:
-                    logger.error(
-                        f"Page {page_num}: Local text model '{text_model_name}' failed: {local_err}."
-                    )
+                    logger.error(f"Page {page_num}: Local text model '{text_model_name}' failed: {local_err}.")
             else:
-                logger.info(
-                    f"Page {page_num}: Local text model processing skipped (text_model_name: '{text_model_name}')."
-                )
+                logger.info(f"Page {page_num}: Local text model processing skipped (text_model_name: '{text_model_name}').")
 
             # Fallback 3: Pre-formatted OCR text if local model failed or was skipped
             if not html_content:
-                logger.info(
-                    f"Page {page_num}: Using pre-formatted OCR text as final fallback."
-                )
+                logger.info(f"Page {page_num}: Using pre-formatted OCR text as final fallback.")
                 escaped_text = html.escape(raw_text)
                 html_content = f"<pre>{escaped_text}</pre>"
         except Exception as ocr_err:
@@ -381,9 +325,7 @@ def pdf_to_html(
         encrypt_html (bool): Whether to encrypt the output HTML file using AES-GCM.
         anchor_hash_flag (bool): Whether to anchor the encrypted HTML hash to the blockchain via WDBX.
     """
-    logger.info(
-        f"Starting PDF conversion: {pdf_path} -> {html_path} using vision model '{vision_model_name}'."
-    )
+    logger.info(f"Starting PDF conversion: {pdf_path} -> {html_path} using vision model '{vision_model_name}'.")
     try:
         pages = convert_from_path(str(pdf_path))
     except Exception as e:
@@ -402,9 +344,7 @@ def pdf_to_html(
         )
         return
 
-    logger.info(
-        f"PDF has {len(pages)} pages. Processing in parallel with max_workers={max_workers or os.cpu_count() or 4}... (extract_tables={extract_tables})"
-    )
+    logger.info(f"PDF has {len(pages)} pages. Processing in parallel with max_workers={max_workers or os.cpu_count() or 4}... (extract_tables={extract_tables})")
     page_html_contents = [""] * len(pages)
     max_workers = max_workers or os.cpu_count() or 4
 
@@ -437,15 +377,10 @@ def pdf_to_html(
             page_num = idx + 1
             try:
                 page_html_contents[idx] = future.result()
-                logger.info(
-                    f"Completed processing page {page_num}/{len(pages)} ({((i+1)/len(pages))*100:.1f}% done)"
-                )
+                logger.info(f"Completed processing page {page_num}/{len(pages)} ({((i+1)/len(pages))*100:.1f}% done)")
             except Exception as proc_err:
                 logger.error(f"Error processing page {page_num}: {proc_err}")
-                page_html_contents[idx] = (
-                    f"<h2>Page {page_num}</h2>"
-                    f"<p><em>Error converting page: {html.escape(str(proc_err))}</em></p>"
-                )
+                page_html_contents[idx] = f"<h2>Page {page_num}</h2>" f"<p><em>Error converting page: {html.escape(str(proc_err))}</em></p>"
 
     # Assemble the final HTML document
     html_doc_parts = [
@@ -474,12 +409,8 @@ def pdf_to_html(
     ]
     for i, page_content in enumerate(page_html_contents):
         page_num = i + 1
-        html_doc_parts.append(
-            f'        <div class="page-container" id="page-{page_num}">'
-        )
-        html_doc_parts.append(
-            f'            <div class="page-header">Page {page_num}</div>'
-        )
+        html_doc_parts.append(f'        <div class="page-container" id="page-{page_num}">')
+        html_doc_parts.append(f'            <div class="page-header">Page {page_num}</div>')
         html_doc_parts.append(f"            <div>{page_content}</div>")
         # Render extracted tables for this page
         if extract_tables and raw_tables[i]:
@@ -487,9 +418,7 @@ def pdf_to_html(
             for table in raw_tables[i]:
                 html_doc_parts.append("                <table>")
                 for row in table:
-                    cells = "".join(
-                        f'<td>{html.escape(str(cell or ""))}</td>' for cell in row
-                    )
+                    cells = "".join(f'<td>{html.escape(str(cell or ""))}</td>' for cell in row)
                     html_doc_parts.append(f"                    <tr>{cells}</tr>")
                 html_doc_parts.append("                </table>")
             html_doc_parts.append("            </div>")
@@ -504,9 +433,7 @@ def pdf_to_html(
 
     if encrypt_html:
         # Encrypt the HTML content
-        aes_gcm = AESGCM(
-            os.urandom(16)
-        )  # Generate a new AES-GCM key for each encryption
+        aes_gcm = AESGCM(os.urandom(16))  # Generate a new AES-GCM key for each encryption
         encrypted_html = aes_gcm.encrypt(os.urandom(16), html_output.encode("utf-8"))
         encrypted_html_path = html_path.with_suffix(html_path.suffix + ".enc")
         encrypted_html_path.write_text(encrypted_html.hex(), encoding="utf-8")
@@ -535,16 +462,10 @@ def main() -> None:
         )
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Convert a PDF (local file or remote URL) to HTML using a vision LLM "
-            "(Ollama/LM Studio compatible) with customizable prompts and fallback mechanisms. "
-            "Can utilize the 'wdbx' module for downloading remote PDFs and configuring its database usage."
-        ),
+        description=("Convert a PDF (local file or remote URL) to HTML using a vision LLM " "(Ollama/LM Studio compatible) with customizable prompts and fallback mechanisms. " "Can utilize the 'wdbx' module for downloading remote PDFs and configuring its database usage."),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "input_pdf", type=str, help="Path to the input PDF file or a URL (http/https)."
-    )
+    parser.add_argument("input_pdf", type=str, help="Path to the input PDF file or a URL (http/https).")
     parser.add_argument("output_html", type=Path, help="Path for the output HTML file.")
     parser.add_argument(
         "--model",
@@ -617,11 +538,7 @@ def main() -> None:
     DEFAULT_TEXT_PROMPT = args.text_prompt
 
     if _local_text_model_handler.backend != args.text_backend:
-        logger.warning(
-            f"TEXT_BACKEND specified via CLI ('{args.text_backend}') differs from the active backend "
-            f"('{_local_text_model_handler.backend}'), set by environment or default. "
-            "To change the active backend, set TEXT_BACKEND environment variable before running."
-        )
+        logger.warning(f"TEXT_BACKEND specified via CLI ('{args.text_backend}') differs from the active backend " f"('{_local_text_model_handler.backend}'), set by environment or default. " "To change the active backend, set TEXT_BACKEND environment variable before running.")
 
     input_source_str = args.input_pdf
     actual_pdf_path: Path
@@ -634,15 +551,11 @@ def main() -> None:
             if hasattr(wdbx, "configure_database") and args.wdbx_db_url:
                 wdbx.configure_database(args.wdbx_db_url)
             try:
-                downloaded_file_path_str = wdbx.download_file(
-                    input_source_str, args.output_html.parent
-                )
+                downloaded_file_path_str = wdbx.download_file(input_source_str, args.output_html.parent)
                 actual_pdf_path = Path(downloaded_file_path_str)
                 logger.info(f"PDF downloaded via wdbx to: {actual_pdf_path}")
             except Exception as e:
-                logger.error(
-                    f"Failed to download PDF via wdbx from URL '{input_source_str}': {e}"
-                )
+                logger.error(f"Failed to download PDF via wdbx from URL '{input_source_str}': {e}")
                 sys.exit(1)
         else:
             # Fallback: download using requests
@@ -650,9 +563,7 @@ def main() -> None:
                 logger.info(f"Downloading PDF directly from URL: {input_source_str}")
                 response = requests.get(input_source_str, stream=True, timeout=60)
                 response.raise_for_status()
-                local_filename = (
-                    input_source_str.split("/")[-1] or "downloaded_file.pdf"
-                )
+                local_filename = input_source_str.split("/")[-1] or "downloaded_file.pdf"
                 local_path = args.output_html.parent / local_filename
                 with open(local_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
@@ -661,16 +572,12 @@ def main() -> None:
                 actual_pdf_path = local_path
                 logger.info(f"PDF downloaded via HTTP to: {actual_pdf_path}")
             except Exception as e:
-                logger.error(
-                    f"Failed to download PDF via HTTP from URL '{input_source_str}': {e}"
-                )
+                logger.error(f"Failed to download PDF via HTTP from URL '{input_source_str}': {e}")
                 sys.exit(1)
     else:
         actual_pdf_path = Path(input_source_str)
         if not actual_pdf_path.is_file():  # More specific check
-            logger.error(
-                f"Input PDF file not found or is not a file: {actual_pdf_path}"
-            )
+            logger.error(f"Input PDF file not found or is not a file: {actual_pdf_path}")
             sys.exit(1)
 
     args.output_html.parent.mkdir(parents=True, exist_ok=True)

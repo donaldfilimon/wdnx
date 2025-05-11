@@ -39,9 +39,7 @@ def get_plugin_logger(plugin_id: str, capacity: int = 100) -> logging.Logger:
     logger = logging.getLogger(f"plugin.{plugin_id}")
     if plugin_id not in LOG_HANDLERS:
         handler = DequeHandler(plugin_id, capacity)
-        formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
-        )
+        formatter = logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         LOG_HANDLERS[plugin_id] = handler

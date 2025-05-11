@@ -11,6 +11,9 @@ class DummyClient:
     def initialize(self):
         pass
 
+    def shutdown(self):
+        pass
+
 
 @pytest.fixture(autouse=True)
 def patch_wdbx(monkeypatch):

@@ -6,7 +6,11 @@
 
 # Local environment variables
 .env
-
+.venv
+venv
+env
+pyenv
+.pyenv
 # Uploaded and generated files
 uploads/
 generated_html/

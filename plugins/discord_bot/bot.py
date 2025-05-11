@@ -42,9 +42,7 @@ def setup_slash_commands():
         await interaction.response.defer(thinking=True)
         try:
             data = scrape_url(url)
-            embed = discord.Embed(
-                title=data.get("title", ""), description=data.get("first_paragraph", "")
-            )
+            embed = discord.Embed(title=data.get("title", ""), description=data.get("first_paragraph", ""))
             await interaction.followup.send(embed=embed)
         except Exception as e:
             await interaction.followup.send(f"Error scraping URL: {e}")
@@ -59,29 +57,19 @@ def setup_slash_commands():
         except Exception as e:
             await interaction.response.send_message(f"Error fetching anchors: {e}")
 
-    @bot.tree.command(
-        name="genkey", description="Generate an AES-GCM key and DM it to you"
-    )
+    @bot.tree.command(name="genkey", description="Generate an AES-GCM key and DM it to you")
     async def slash_genkey(interaction: discord.Interaction):
         key = generate_key()
         await interaction.user.send(f"🔑 Your AES-GCM key: `{key.hex()}`")
-        await interaction.response.send_message(
-            f"🔒 Key generated and sent via DM, {interaction.user.mention}."
-        )
+        await interaction.response.send_message(f"🔒 Key generated and sent via DM, {interaction.user.mention}.")
 
     @bot.tree.command(name="encrypt", description="Encrypt text with AES-GCM key")
-    async def slash_encrypt(
-        interaction: discord.Interaction, key_hex: str, plaintext: str
-    ):
+    async def slash_encrypt(interaction: discord.Interaction, key_hex: str, plaintext: str):
         try:
             key = bytes.fromhex(key_hex)
             result = encrypt_data(key, plaintext.encode("utf-8"))
-            await interaction.user.send(
-                f"🔐 Ciphertext: `{result['ciphertext']}`, nonce: `{result['nonce']}`"
-            )
-            await interaction.response.send_message(
-                f"✅ Encryption complete. Check your DMs, {interaction.user.mention}."
-            )
+            await interaction.user.send(f"🔐 Ciphertext: `{result['ciphertext']}`, nonce: `{result['nonce']}`")
+            await interaction.response.send_message(f"✅ Encryption complete. Check your DMs, {interaction.user.mention}.")
         except Exception as e:
             await interaction.response.send_message(f"Encryption error: {e}")
 
@@ -95,9 +83,7 @@ def setup_slash_commands():
         try:
             key = bytes.fromhex(key_hex)
             plaintext = decrypt_data(key, nonce_hex, ciphertext_hex)
-            await interaction.response.send_message(
-                f"🔓 Decrypted text: {plaintext.decode('utf-8')}"
-            )
+            await interaction.response.send_message(f"🔓 Decrypted text: {plaintext.decode('utf-8')}")
         except Exception as e:
             await interaction.response.send_message(f"Decryption error: {e}")
 
@@ -115,13 +101,9 @@ def setup_slash_commands():
         try:
             health = wdbx.check_shards_health()
             if not health:
-                return await interaction.response.send_message(
-                    "No shard configuration available."
-                )
+                return await interaction.response.send_message("No shard configuration available.")
             lines = [f"{node}: {'✅' if ok else '❌'}" for node, ok in health.items()]
-            await interaction.response.send_message(
-                "**Shard Health:**\n" + "\n".join(lines)
-            )
+            await interaction.response.send_message("**Shard Health:**\n" + "\n".join(lines))
         except Exception as e:
             await interaction.response.send_message(f"Shard health error: {e}")
 
@@ -130,9 +112,7 @@ def setup_slash_commands():
     async def slash_join(interaction: discord.Interaction):
         channel = interaction.user.voice.channel if interaction.user.voice else None
         if not channel:
-            return await interaction.response.send_message(
-                "You are not in a voice channel.", ephemeral=True
-            )
+            return await interaction.response.send_message("You are not in a voice channel.", ephemeral=True)
         await channel.connect()
         await interaction.response.send_message(f"Joined voice channel {channel.name}")
 
@@ -143,9 +123,7 @@ def setup_slash_commands():
             await voice_client.disconnect()
             await interaction.response.send_message("Left voice channel.")
         else:
-            await interaction.response.send_message(
-                "I am not in a voice channel.", ephemeral=True
-            )
+            await interaction.response.send_message("I am not in a voice channel.", ephemeral=True)
 
     @bot.tree.command(name="say", description="Speak text in voice channel")
     async def slash_say(interaction: discord.Interaction, phrase: str):
@@ -153,9 +131,7 @@ def setup_slash_commands():
         if not voice_client or not voice_client.is_connected():
             channel = interaction.user.voice.channel if interaction.user.voice else None
             if not channel:
-                return await interaction.response.send_message(
-                    "You must be in a voice channel.", ephemeral=True
-                )
+                return await interaction.response.send_message("You must be in a voice channel.", ephemeral=True)
             voice_client = await channel.connect()
         tts = gTTS(text=phrase, lang="en")
         tmpfile = "phrase.mp3"
@@ -163,9 +139,7 @@ def setup_slash_commands():
         voice_client.play(discord.FFmpegPCMAudio(tmpfile))
         await interaction.response.send_message(f"Speaking: {phrase}", ephemeral=True)
 
-    @bot.tree.command(
-        name="screenshot", description="Take a screenshot and send it in chat"
-    )
+    @bot.tree.command(name="screenshot", description="Take a screenshot and send it in chat")
     async def slash_screenshot(interaction: discord.Interaction):
         try:
             screenshot = ImageGrab.grab()
@@ -182,9 +156,7 @@ def setup_slash_commands():
         try:
             base_url = os.getenv("APP_URL", "http://localhost:8000")
             resp = requests.get(f"{base_url}/health")
-            await interaction.response.send_message(
-                f"App status: {resp.status_code} - {resp.text}"
-            )
+            await interaction.response.send_message(f"App status: {resp.status_code} - {resp.text}")
         except Exception as e:
             await interaction.response.send_message(f"App status error: {e}")
 

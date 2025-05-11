@@ -17,9 +17,7 @@ def handle_wdbx_call(ctx, func, success_message, *args, **kwargs):
             click.echo(json.dumps({"status": "success", "result": result}, indent=2))  # noqa: E501
         else:
             click.echo(f"SUCCESS: {success_message}")
-            if result is not None and not isinstance(
-                result, bool
-            ):  # Don't print None or simple bools unless JSON
+            if result is not None and not isinstance(result, bool):  # Don't print None or simple bools unless JSON
                 if isinstance(result, (list, dict)):
                     click.echo(json.dumps(result, indent=2))
                 else:
@@ -73,9 +71,7 @@ def handle_wdbx_call(ctx, func, success_message, *args, **kwargs):
     help="JWT token for authentication. Can also be set via WDBX_TOKEN env var.",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output.")
-@click.option(
-    "--json-output", "-j", is_flag=True, help="Output results in JSON format."
-)
+@click.option("--json-output", "-j", is_flag=True, help="Output results in JSON format.")
 @click.pass_context
 def wdbx_cli(ctx, host, port, token, verbose, json_output):
     """WDBX Command Line Interface for interacting with the WDBX server."""
@@ -115,9 +111,7 @@ def store(ctx, vector, metadata_str):
         click.echo("Error: Invalid JSON format for metadata.", err=True)
         ctx.exit(1)
 
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.store, "Vector stored.", list(vector), metadata)
 
 
@@ -139,9 +133,7 @@ def search(ctx, vector, limit):
 
         flask wdbx search 0.1 0.2 0.3 --limit 5
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.search, "Search completed.", list(vector), limit=limit)
 
 
@@ -180,9 +172,7 @@ def bulk_store(ctx, items_json_or_file):
         ctx.exit(1)
 
     pairs = [(it.get("vector", []), it.get("metadata", {})) for it in items]
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.bulk_store, f"{len(pairs)} vectors stored.", pairs)
 
 
@@ -227,12 +217,8 @@ def bulk_search(ctx, vectors_json_or_file, limit):
         click.echo(f"Error: File not found '{vectors_json_or_file}'.", err=True)
         ctx.exit(1)
 
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
-    handle_wdbx_call(
-        ctx, client.bulk_search, "Bulk search completed.", vectors, limit=limit
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
+    handle_wdbx_call(ctx, client.bulk_search, "Bulk search completed.", vectors, limit=limit)
 
 
 @wdbx_cli.command("delete")
@@ -246,12 +232,8 @@ def delete(ctx, vector_id):
 
         flask wdbx delete 123
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
-    handle_wdbx_call(
-        ctx, client.delete, f"Vector ID {vector_id} processed for deletion.", vector_id
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
+    handle_wdbx_call(ctx, client.delete, f"Vector ID {vector_id} processed for deletion.", vector_id)
 
 
 @wdbx_cli.command("update-metadata")
@@ -277,9 +259,7 @@ def update_metadata(ctx, vector_id, metadata_str):
         click.echo("Error: Invalid JSON format for metadata.", err=True)
         ctx.exit(1)
 
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(
         ctx,
         client.update_metadata,
@@ -300,9 +280,7 @@ def get_metadata(ctx, vector_id):
 
         flask wdbx get-metadata 123
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(
         ctx,
         client.get_metadata,
@@ -321,9 +299,7 @@ def count(ctx):
 
         flask wdbx count
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.count, "Total vector count retrieved.")
 
 
@@ -337,9 +313,7 @@ def ping(ctx):
 
         flask wdbx ping
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     # Ping might not return a complex object, adjust message or use direct call
     try:
         alive = client.ping()
@@ -388,9 +362,7 @@ def flush(ctx, confirm):
         click.echo("Flush operation cancelled. Use --confirm to proceed.", err=True)
         ctx.exit(1)
 
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.flush, "All vectors flushed from the database.")
 
 
@@ -404,16 +376,10 @@ def list_shards(ctx):
 
         flask wdbx list-shards
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     # This requires the client to have a 'shards' attribute or a method to list them
     try:
-        shards = (
-            list(client.shards.keys())
-            if hasattr(client, "shards") and client.shards
-            else []
-        )
+        shards = list(client.shards.keys()) if hasattr(client, "shards") and client.shards else []
         if ctx.obj.get("JSON_OUTPUT"):
             click.echo(json.dumps({"status": "success", "result": shards}, indent=2))  # noqa: E501
         else:
@@ -421,9 +387,7 @@ def list_shards(ctx):
                 click.echo("Configured shards:")
                 click.echo(json.dumps(shards, indent=2))
             else:
-                click.echo(
-                    "No shards configured or sharding not enabled/supported by client."
-                )
+                click.echo("No shards configured or sharding not enabled/supported by client.")
     except Exception as e:
         error_info = {
             "status": "error",
@@ -451,9 +415,7 @@ def shards_health(ctx):
 
         flask wdbx shards-health
     """
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     # Assumes client.check_shards_health() exists and returns a dict
     if not hasattr(client, "check_shards_health"):
         message = "Shard health check not supported by this client."
@@ -479,12 +441,8 @@ def plugin(ctx):
 @click.pass_context
 def plugin_list(ctx, enabled_only):
     """List registered plugins."""
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
-    handle_wdbx_call(
-        ctx, client.list_plugins, "Plugin list retrieved.", active_only=enabled_only
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
+    handle_wdbx_call(ctx, client.list_plugins, "Plugin list retrieved.", active_only=enabled_only)
 
 
 @plugin.command("enable")
@@ -492,9 +450,7 @@ def plugin_list(ctx, enabled_only):
 @click.pass_context
 def plugin_enable(ctx, name):
     """Enable a plugin by name."""
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.enable_plugin, f"Plugin {name} enabled.", name)
 
 
@@ -503,9 +459,7 @@ def plugin_enable(ctx, name):
 @click.pass_context
 def plugin_disable(ctx, name):
     """Disable a plugin by name."""
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.disable_plugin, f"Plugin {name} disabled.", name)
 
 
@@ -514,9 +468,7 @@ def plugin_disable(ctx, name):
 @click.pass_context
 def plugin_reload(ctx, name):
     """Reload a plugin by name."""
-    client = WDBX(
-        host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN")
-    )
+    client = WDBX(host=ctx.obj.get("HOST"), port=ctx.obj.get("PORT"), token=ctx.obj.get("TOKEN"))
     handle_wdbx_call(ctx, client.reload_plugin, f"Plugin {name} reloaded.", name)
 
 

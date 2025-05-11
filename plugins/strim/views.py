@@ -12,18 +12,14 @@ INFO_PATH = os.path.join(os.path.dirname(__file__), "info.json")
 with open(INFO_PATH) as f:
     _info = json.load(f)
 # Determine and prepare data directory
-DATA_DIR = os.path.join(
-    os.getcwd(), _info.get("options", {}).get("data_directory", "strim_data")
-)
+DATA_DIR = os.path.join(os.getcwd(), _info.get("options", {}).get("data_directory", "strim_data"))
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Helpers
 
 
 def list_files():
-    return [
-        f for f in os.listdir(DATA_DIR) if os.path.isfile(os.path.join(DATA_DIR, f))
-    ]
+    return [f for f in os.listdir(DATA_DIR) if os.path.isfile(os.path.join(DATA_DIR, f))]
 
 
 def get_file_path(filename):
@@ -200,9 +196,7 @@ def complete(filename):
     try:
         script = jedi.Script(source, path=fp)
         comps = script.complete(line, column)
-        result = [
-            {"name": c.name, "complete": c.complete, "type": c.type} for c in comps
-        ]
+        result = [{"name": c.name, "complete": c.complete, "type": c.type} for c in comps]
     except Exception:
         result = []
     return jsonify(result)

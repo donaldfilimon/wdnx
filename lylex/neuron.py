@@ -42,9 +42,7 @@ class Neuron:
         """
         h.run()
 
-    def record_trace(
-        self, ref=None, t_ref=None, run: bool = True, use_jax: bool = False
-    ):
+    def record_trace(self, ref=None, t_ref=None, run: bool = True, use_jax: bool = False):
         """
         Record a variable over time.
 
@@ -75,9 +73,7 @@ class Neuron:
             v = np.array(list(v_vec))
         return t, v
 
-    def record_multiple_traces(
-        self, refs: dict, t_ref=None, run: bool = True, use_jax: bool = False
-    ):
+    def record_multiple_traces(self, refs: dict, t_ref=None, run: bool = True, use_jax: bool = False):
         """
         Record multiple variables over time.
 
@@ -149,15 +145,11 @@ class Neuron:
                 current_sweep_results = {}
                 for val2 in values2:
                     setattr(h, param_name2, val2)
-                    t, v = self.record_trace(
-                        ref=ref, t_ref=t_ref, run=True, use_jax=use_jax
-                    )
+                    t, v = self.record_trace(ref=ref, t_ref=t_ref, run=True, use_jax=use_jax)
                     current_sweep_results[val2] = (t, v)
                 results[val] = current_sweep_results
             else:
-                t, v = self.record_trace(
-                    ref=ref, t_ref=t_ref, run=True, use_jax=use_jax
-                )
+                t, v = self.record_trace(ref=ref, t_ref=t_ref, run=True, use_jax=use_jax)
                 results[val] = (t, v)
 
         # restore original parameter(s)
@@ -179,9 +171,7 @@ class Neuron:
 
     def plot_trace(
         self,
-        traces: Union[
-            Tuple[np.ndarray, np.ndarray], Dict[str, Tuple[np.ndarray, np.ndarray]]
-        ],
+        traces: Union[Tuple[np.ndarray, np.ndarray], Dict[str, Tuple[np.ndarray, np.ndarray]]],
         title: Optional[str] = None,
         xlabel: str = "Time",
         ylabel: str = "Value",
@@ -210,9 +200,7 @@ class Neuron:
             if len(traces) > 1:
                 plt.legend()
         else:
-            raise ValueError(
-                "traces must be a (t,v) tuple or a dict of {'label': (t,v)}"
-            )
+            raise ValueError("traces must be a (t,v) tuple or a dict of {'label': (t,v)}")
 
         if title:
             plt.title(title)

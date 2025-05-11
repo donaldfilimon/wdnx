@@ -19,9 +19,7 @@ def test_torch_embedding_forward():
     assert y.shape == (2, output_dim)
 
 
-@pytest.mark.skipif(
-    not torch.distributed.is_available(), reason="Distributed backend not available"
-)
+@pytest.mark.skipif(not torch.distributed.is_available(), reason="Distributed backend not available")
 def test_wrap_ddp_without_init(monkeypatch):
     model = TorchEmbeddingModel(5, 5, 5)
     # Ensure distributed is not initialized

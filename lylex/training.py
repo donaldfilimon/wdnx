@@ -44,17 +44,9 @@ class TrainingManager:
             self.wandb_project = wandb_project
         else:
             self.wandb_project = None
-        logger.info(
-            "TrainingManager initialized for model %s (backend=%s)", model_name, backend
-        )
+        logger.info("TrainingManager initialized for model %s (backend=%s)", model_name, backend)
 
-    def train(
-        self,
-        train_dataset,
-        eval_dataset=None,
-        output_dir: str = "./trained_model",
-        **training_args_kwargs: Any
-    ) -> None:
+    def train(self, train_dataset, eval_dataset=None, output_dir: str = "./trained_model", **training_args_kwargs: Any) -> None:
         """
         Fine-tune the model on provided datasets.
 
@@ -77,12 +69,7 @@ class TrainingManager:
         if self.handler.backend == "jax":
             from transformers import FlaxTrainer, FlaxTrainingArguments
 
-            args = FlaxTrainingArguments(
-                output_dir=output_dir,
-                evaluation_strategy="steps" if eval_dataset is not None else "no",
-                logging_dir=os.path.join(output_dir, "logs"),
-                **training_args_kwargs
-            )
+            args = FlaxTrainingArguments(output_dir=output_dir, evaluation_strategy="steps" if eval_dataset is not None else "no", logging_dir=os.path.join(output_dir, "logs"), **training_args_kwargs)
             trainer = FlaxTrainer(
                 model=self.handler.model,
                 args=args,
@@ -93,12 +80,7 @@ class TrainingManager:
         else:
             from transformers import Trainer, TrainingArguments
 
-            args = TrainingArguments(
-                output_dir=output_dir,
-                evaluation_strategy="steps" if eval_dataset is not None else "no",
-                logging_dir=os.path.join(output_dir, "logs"),
-                **training_args_kwargs
-            )
+            args = TrainingArguments(output_dir=output_dir, evaluation_strategy="steps" if eval_dataset is not None else "no", logging_dir=os.path.join(output_dir, "logs"), **training_args_kwargs)
             trainer = Trainer(
                 model=self.handler.model,
                 args=args,
@@ -116,15 +98,7 @@ class TrainingManager:
             wandb.finish()
         logger.info("Training complete; model saved to %s", output_dir)
 
-    def hyperparameter_search(
-        self,
-        train_dataset,
-        eval_dataset,
-        output_dir: str = "./hyperopt_model",
-        n_trials: int = 10,
-        direction: str = "minimize",
-        **training_args_base: Any
-    ) -> Dict[str, Any]:
+    def hyperparameter_search(self, train_dataset, eval_dataset, output_dir: str = "./hyperopt_model", n_trials: int = 10, direction: str = "minimize", **training_args_base: Any) -> Dict[str, Any]:
         """
         Perform hyperparameter tuning using Optuna.
 
@@ -145,17 +119,9 @@ class TrainingManager:
             trial_args = {
                 "learning_rate": trial.suggest_loguniform("learning_rate", 1e-5, 5e-4),
                 "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
-                "per_device_train_batch_size": trial.suggest_categorical(
-                    "per_device_train_batch_size", [8, 16, 32]
-                ),
+                "per_device_train_batch_size": trial.suggest_categorical("per_device_train_batch_size", [8, 16, 32]),
             }
-            args = TrainingArguments(
-                output_dir=output_dir,
-                evaluation_strategy="steps",
-                logging_dir=os.path.join(output_dir, "logs"),
-                **training_args_base,
-                **trial_args
-            )
+            args = TrainingArguments(output_dir=output_dir, evaluation_strategy="steps", logging_dir=os.path.join(output_dir, "logs"), **training_args_base, **trial_args)
             trainer = Trainer(
                 model=self.handler.model,
                 args=args,

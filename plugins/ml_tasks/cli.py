@@ -32,9 +32,7 @@ def train_cli(config_file):
         output_dir=cfg.get("output_dir", "./trained_model"),
         **cfg.get("training_args", {}),
     )
-    click.echo(
-        f"Training complete. Model saved to {cfg.get('output_dir', './trained_model')}"
-    )
+    click.echo(f"Training complete. Model saved to {cfg.get('output_dir', './trained_model')}")
 
 
 @bp.cli.command("tune")

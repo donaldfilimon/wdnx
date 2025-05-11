@@ -49,9 +49,7 @@ def wrap_torch_ddp(model: nn.Module) -> DDP:
     Wrap a PyTorch model in DistributedDataParallel.
     """
     if not dist.is_initialized():
-        raise RuntimeError(
-            "Distributed not initialized. Call init_torch_distributed first."
-        )
+        raise RuntimeError("Distributed not initialized. Call init_torch_distributed first.")
     return DDP(model)
 
 

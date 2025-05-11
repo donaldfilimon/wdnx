@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseSettings
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 
 class Settings(BaseSettings):
@@ -9,7 +13,7 @@ class Settings(BaseSettings):
     upload_folder: Path = Path("uploads")
     output_folder: Path = Path("generated_html")
     wdbx_vector_dimension: int = 1
-    wdbx_enable_plugins: bool = False
+    wdbx_enable_plugins: bool = True
     metrics_port: int = 8000
     metrics_addr: str = "0.0.0.0"
     update_interval_minutes: int = 60
@@ -38,6 +42,36 @@ class Settings(BaseSettings):
     ollama_api_url: Optional[str] = "http://localhost:11434"
     lmstudio_api_url: Optional[str] = "http://127.0.0.1:8000"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type["Settings"],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # Finalized: environment variables take highest priority, then init, dotenv, file secrets
+        return (env_settings, init_settings, dotenv_settings, file_secret_settings)
+
+
+def get_package_version() -> str:
+    """
+    Returns the version string from setup.py for use in the application.
+    """
+    import os
+    import re
+
+    setup_path = os.path.join(os.path.dirname(__file__), "setup.py")
+    version_pattern = re.compile(r'version\s*=\s*[\'"]([^\'"]+)[\'"]')
+    try:
+        with open(setup_path, "r", encoding="utf-8") as f:
+            for line in f:
+                match = version_pattern.search(line)
+                if match:
+                    return match.group(1)
+    except Exception:
+        pass
+    return "0.0.0"

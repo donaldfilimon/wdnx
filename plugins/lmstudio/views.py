@@ -22,9 +22,7 @@ def list_models():
     logger.info("Request to list LMStudio models.")
     try:
         models = openai.Model.list()
-        logger.info(
-            f"Successfully listed {len(models.get('data', []))} LMStudio models."
-        )
+        logger.info(f"Successfully listed {len(models.get('data', []))} LMStudio models.")
         return jsonify(models)
     except Exception as e:
         logger.error(f"Error listing LMStudio models: {e}", exc_info=True)

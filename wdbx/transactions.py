@@ -12,7 +12,7 @@ class TransactionManager:
     Simple MVCC transaction manager. Placeholder implementation for version control.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.lock = threading.Lock()
         self.active_transactions: Dict[str, Dict[str, Any]] = {}
 

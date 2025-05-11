@@ -73,11 +73,7 @@ class AdvancedUpdater:
         """
         if not backup_file:
             # find latest backup
-            files = sorted(
-                f
-                for f in os.listdir(backup_dir)
-                if f.startswith(os.path.basename(file_path))
-            )
+            files = sorted(f for f in os.listdir(backup_dir) if f.startswith(os.path.basename(file_path)))
             if not files:
                 logger.error("No backups to rollback")
                 return
@@ -96,18 +92,14 @@ class AdvancedUpdater:
         except Exception as e:
             logger.error(f"Failed to reload {module_name}: {e}")
 
-    def update_from_git(
-        self, local_dir: str, module_paths: Optional[List[str]] = None
-    ) -> None:
+    def update_from_git(self, local_dir: str, module_paths: Optional[List[str]] = None) -> None:
         """
         Clone/pull a Git repo and apply changes for specified module files.
         """
         if not self.repo_url:
             raise ValueError("repo_url not configured")
         if not os.path.isdir(local_dir):
-            subprocess.check_call(
-                ["git", "clone", "-b", self.branch, self.repo_url, local_dir]
-            )
+            subprocess.check_call(["git", "clone", "-b", self.branch, self.repo_url, local_dir])
         else:
             subprocess.check_call(["git", "-C", local_dir, "fetch"])
             subprocess.check_call(["git", "-C", local_dir, "checkout", self.branch])
@@ -161,12 +153,7 @@ class AdvancedUpdater:
         with open(file_path, "r", encoding="utf-8") as f:
             original = f.read()
         # Build prompt for AI
-        prompt = (
-            f"### File: {file_path}\n"
-            f"```python\n{original}\n```\n"
-            f"### Instruction: {instruction}\n"
-            "Provide the full updated source file without additional commentary."
-        )
+        prompt = f"### File: {file_path}\n" f"```python\n{original}\n```\n" f"### Instruction: {instruction}\n" "Provide the full updated source file without additional commentary."
         # Invoke LylexAgent to generate updated code
         from lylex.ai import LylexAgent
 

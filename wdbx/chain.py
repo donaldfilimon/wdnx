@@ -13,7 +13,7 @@ class BlockChain:
     Manages a chain of DataBlocks with integrity checks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.chain: List[DataBlock] = []
         self.lock = Lock()
 

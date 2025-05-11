@@ -39,18 +39,10 @@ def train_api():
             output_dir=cfg.get("output_dir", "./trained_model"),
             **cfg.get("training_args", {}),
         )
-        logger.info(
-            f"Training complete for model: {cfg.get('model_name')}. Output: {cfg.get('output_dir', './trained_model')}"
-        )
-        return jsonify(
-            {
-                "message": f"Training started. Model will be saved to {cfg.get('output_dir', './trained_model')}"
-            }
-        )
+        logger.info(f"Training complete for model: {cfg.get('model_name')}. Output: {cfg.get('output_dir', './trained_model')}")
+        return jsonify({"message": f"Training started. Model will be saved to {cfg.get('output_dir', './trained_model')}"})
     except Exception as e:
-        logger.error(
-            f"ML training error for model {cfg.get('model_name')}: {e}", exc_info=True
-        )
+        logger.error(f"ML training error for model {cfg.get('model_name')}: {e}", exc_info=True)
         raise
 
 
@@ -66,9 +58,7 @@ def tune_api():
     """
     cfg = request.get_json(force=True)
     # Validation for required fields is handled by @require_json_fields
-    logger.info(
-        f"Received tuning request for model: {cfg.get('model_name')}, study: {cfg.get('study_name')}"
-    )
+    logger.info(f"Received tuning request for model: {cfg.get('model_name')}, study: {cfg.get('study_name')}")
     try:
         tm = TrainingManager(
             model_name=cfg["model_name"],
@@ -84,9 +74,7 @@ def tune_api():
             storage=cfg.get("storage"),  # e.g., 'sqlite:///tuning.db'
             metric_name=cfg.get("metric_name", "eval_loss"),
         )
-        logger.info(
-            f"Tuning complete for model: {cfg.get('model_name')}, study: {study.study_name}. Best trial: {study.best_trial.value}"
-        )
+        logger.info(f"Tuning complete for model: {cfg.get('model_name')}, study: {study.study_name}. Best trial: {study.best_trial.value}")
         return jsonify(
             {
                 "message": f"Hyperparameter tuning complete for study '{study.study_name}'.",

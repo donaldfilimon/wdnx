@@ -1,74 +1,129 @@
-Flask>=2.2.0
-pydantic>=1.10.0
-prometheus-client>=0.16.0
-python-dotenv>=1.0.0
-aiohttp>=3.8.0
-requests>=2.25.1
-transformers>=4.51.3
+# =========================
+# Core Web & API Frameworks
+# =========================
+Flask==3.1.0
+Flask-Cors==5.0.1
+Flask-Limiter==3.12
+Flask-Login==0.6.3
+Flask-JWT-Extended==4.7.1
+Flask-Plugins==1.6.1
 
-# Web scraping support
-beautifulsoup4>=4.11.1
+# =========================
+# Data Validation & Settings
+# =========================
+pydantic==2.11.4
+python-dotenv==1.1.0
 
-# Discord bot
-discord.py>=2.3.0
+# =========================
+# Async & HTTP/Web
+# =========================
+aiohttp==3.11.18
+requests==2.32.3
+httpx==0.28.1
+# For advanced web automation and scraping:
+selenium==4.32.0
+playwright==1.52.0
+beautifulsoup4==4.13.4
+lxml==5.4.0
+Scrapy==2.13.0
 
-# PDF table extraction
-pdfplumber>=0.8.0
+# =========================
+# ML, AI, and Model Serving (CPU/GPU/Apple Silicon)
+# =========================
+transformers==4.51.3
+torch==2.7.0
+torchvision==0.22.0
+jax==0.6.0
+jaxlib==0.6.0
+# For Apple Silicon (Mac) ML acceleration
+# mlx>=0.1.0; platform_system=="Darwin" and platform_machine=="arm64"
+# CUDA support (for NVIDIA GPUs)
+# torch and jaxlib wheels autodetect CUDA, but you can specify versions if needed:
+# torch==2.2.2+cu121  # Example: for CUDA 12.1, see https://pytorch.org/get-started/locally/
+# jaxlib==0.6.0+cuda12.cudnn89  # Example: for CUDA 12, see https://github.com/google/jax#pip-installation-gpu-cuda
+onnxruntime-gpu==1.22.0
+onnx==1.17.0
+accelerate>=0.21.0
+peft==0.15.2
+optuna==4.3.0
+wandb==0.19.11
+openai==1.78.0
+datasets==3.6.0
+tiktoken==0.9.0
+numpy==2.1.3
+scipy==1.15.3
+scikit-learn==1.6.1
+sentence-transformers==4.1.0
 
-# GPU acceleration and model optimization
-accelerate>=0.20.3
-onnxruntime-gpu>=1.14.1
+# =========================
+# Vision, OCR, and PDF
+# =========================
+pdfplumber==0.11.6
+pdf2image==1.17.0
+pytesseract==0.3.13
+pillow==11.2.1
+opencv-python==4.11.0.86
+easyocr==1.7.2
 
-# Encryption and blockchain
-cryptography>=40.0.0
-web3>=6.0.0
+# =========================
+# Discord Bot
+# =========================
+discord.py==2.5.2
 
-# Documentation tools
-mkdocs>=1.4
-mkdocs-material>=9.0.8
-mkdocstrings>=0.22.0
+# =========================
+# Blockchain & Encryption
+# =========================
+cryptography==44.0.3
+web3==7.11.0
 
-# Plugin system support
-flask-plugins>=0.1.0
+# =========================
+# Documentation Tools
+# =========================
+mkdocs==1.6.1
+mkdocs-material==9.6.13
+mkdocstrings==0.29.1
 
-# Advanced training features
-optuna>=3.0.0
-peft>=0.3.0
-wandb>=0.14.0
+# =========================
+# Scheduling & Utilities
+# =========================
+APScheduler==3.11.0
+click==8.2.0
+prometheus-client==0.21.1
+loguru==0.7.3
+rich==13.9.4
+tqdm==4.67.1
 
-# OpenAI embeddings
-openai>=0.27.0
+# =========================
+# Database & Storage
+# =========================
+sqlalchemy==2.0.40
+pymongo==4.12.1
+redis==6.0.0
 
-# Vision model support
-torchvision>=0.15.0
+# =========================
+# Optional/Experimental
+# =========================
+# wdbx>=0.1.0
 
-# Vector operations support
-numpy>=1.21.0
+# =========================
+# Notes:
+# - For GPU acceleration, install the correct CUDA-enabled wheels for torch and jaxlib as per your hardware.
+#   See: https://pytorch.org/get-started/locally/ and https://github.com/google/jax#pip-installation-gpu-cuda
+# - For Apple Silicon (M1/M2/M3), mlx provides native ML acceleration: https://github.com/ml-explore/mlx
+# - To ensure reproducibility, all versions are pinned to the current environment.
+# - Use a virtual environment for isolation and reproducibility.
 
-# Scheduler support
-APScheduler>=3.8.1
-
-# Rate limiting support
-Flask-Limiter>=2.12.0
-
-# Login support
-flask-Login>=0.6.2
-
-# JWT support
-flask-jwt-extended>=4.4.0
-
-# Additional dependencies
-click>=8.0.0
-Flask-Cors>=3.0.10
-jax>=0.6.0
-jaxlib>=0.6.0
-torch>=2.0.0
-pdf2image>=1.17.0
-pytesseract>=0.3.10
-pillow>=11.2.0
-
-# Optional ML/GPU dependencies
-datasets>=2.10.0
-tiktoken>=0.4.0
-wdbx>=0.1.0
-
+# =========================
+# Testing support
+# =========================
+pytest==8.3.5
+pytest-cov==6.1.1
+# For type checking and linting
+mypy==1.15.0
+flake8==7.2.0
+flake8-bugbear==24.12.12
+flake8-annotations==3.1.1
+black==25.1.0
+isort==6.0.1
+pydocstyle==6.3.0
+autopep8==2.1.0

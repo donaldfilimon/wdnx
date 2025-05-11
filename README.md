@@ -1,4 +1,4 @@
-# WDBX
+# lylexpy
 
 WDBX is a modular Flask-based Python application and library providing a vector database, blockchain anchoring, and plugin platform. It includes:
 
@@ -15,8 +15,8 @@ WDBX is a modular Flask-based Python application and library providing a vector 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Frostshake/WDBx.git
-   cd WDBx
+   git clone https://github.com/Frostshake/lylexpy.git
+   cd lylexpy
    ```
 2. Create a virtual environment and install dependencies:
    ```bash
@@ -47,4 +47,30 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). 
+This project is licensed under the [MIT License](LICENSE).
+
+## Development & Code Quality
+
+Install development dependencies (including Black, isort, pytest, etc.):
+```bash
+pip install -e .[dev]
+```
+
+Run pre-commit checks (formats, linting, types):
+```bash
+pre-commit run --all-files
+```
+
+Automatically format code with Black:
+```bash
+black .
+isort .
+```
+
+
+## Testing
+
+Run the test suite with pytest:
+```bash
+pytest
+``` 

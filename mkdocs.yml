@@ -1,4 +1,4 @@
-site_name: "WDBX Documentation"
+site_name: "lylexpy Documentation"
 
 nav:
   - Home: docs/index.md

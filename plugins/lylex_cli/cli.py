@@ -82,11 +82,7 @@ def list_shards():
 def shards_health():
     """Get health status of each shard."""
     db = LylexDB()
-    health = (
-        db.client.check_shards_health()
-        if hasattr(db.client, "check_shards_health")
-        else {}
-    )
+    health = db.client.check_shards_health() if hasattr(db.client, "check_shards_health") else {}
     click.echo(json.dumps(health, indent=2))
 
 
@@ -148,9 +144,7 @@ def brain_start():
 @bp.cli.command("brain-sweep")
 @click.argument("param")
 @click.argument("values", nargs=-1, type=float)
-@click.option(
-    "--param2", default=None, help="Name of the second parameter for 2D sweep."
-)
+@click.option("--param2", default=None, help="Name of the second parameter for 2D sweep.")
 @click.option(
     "--values2",
     multiple=True,
@@ -168,19 +162,13 @@ def brain_sweep(param, values, param2, values2):
         processed_values2 = list(values2) if values2 else None
 
         if param2 and not processed_values2:
-            click.echo(
-                "Error: --values2 must be provided if --param2 is specified.", err=True
-            )
+            click.echo("Error: --values2 must be provided if --param2 is specified.", err=True)
             return
         if not param2 and processed_values2:
-            click.echo(
-                "Error: --param2 must be provided if --values2 is specified.", err=True
-            )
+            click.echo("Error: --param2 must be provided if --values2 is specified.", err=True)
             return
 
-        results = brain.simulate_sweep(
-            param, processed_values, param_name2=param2, values2=processed_values2
-        )
+        results = brain.simulate_sweep(param, processed_values, param_name2=param2, values2=processed_values2)
 
         # Helper to serialize trace data (numpy arrays to lists)
         def serialize_trace_data(trace_tuple):
@@ -191,15 +179,9 @@ def brain_sweep(param, values, param2, values2):
         output = {}
         if param2 and processed_values2:  # 2D sweep
             for val1, nested_results in results.items():
-                output[str(val1)] = {
-                    str(val2): serialize_trace_data(trace_data)
-                    for val2, trace_data in nested_results.items()
-                }
+                output[str(val1)] = {str(val2): serialize_trace_data(trace_data) for val2, trace_data in nested_results.items()}
         else:  # 1D sweep
-            output = {
-                str(val): serialize_trace_data(trace_data)
-                for val, trace_data in results.items()
-            }
+            output = {str(val): serialize_trace_data(trace_data) for val, trace_data in results.items()}
 
         click.echo(json.dumps(output, indent=2))
     except Exception as e:

@@ -25,8 +25,6 @@ class ImageGenerator:
         """
         Generate images for the given prompt. Returns a list of image URLs.
         """
-        response = openai.Image.create(
-            prompt=prompt, n=self.n, size=self.size, model=self.model
-        )
+        response = openai.Image.create(prompt=prompt, n=self.n, size=self.size, model=self.model)
         # Extract URLs from response
         return [item.get("url") for item in response.get("data", [])]

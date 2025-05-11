@@ -5,7 +5,9 @@ def test_tokenize_basic():
     text = "Hello, world! This is a test."
     tokens = tokenize(text)
     assert isinstance(tokens, list)
-    assert "Hello," in tokens and "world!" in tokens
+    # Strip whitespace from each token for matching
+    stripped = [tok.strip() for tok in tokens]
+    assert "Hello" in stripped and "," in stripped and "world" in stripped and "!" in stripped
 
 
 def test_tokenize_empty():

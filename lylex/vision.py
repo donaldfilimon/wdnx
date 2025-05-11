@@ -42,9 +42,7 @@ class VisionModelHandler:
         """
         Zero-shot classification: returns a mapping label -> probability.
         """
-        inputs = self.processor(
-            text=text_labels, images=image, return_tensors="pt", padding=True
-        )
+        inputs = self.processor(text=text_labels, images=image, return_tensors="pt", padding=True)
         with torch.no_grad():
             outputs = self.model(**inputs)
             logits_per_image = outputs.logits_per_image

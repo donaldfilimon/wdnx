@@ -3,6 +3,7 @@ import socket
 import struct
 import threading
 import time
+from typing import List, Tuple
 
 
 class NodeDiscovery:
@@ -23,19 +24,19 @@ class NodeDiscovery:
         self.service_port = service_port
         self.discovery_port = discovery_port
         self._stop_event = threading.Event()
-        self._peers = set()
+        self._peers: set[tuple[str, int]] = set()
 
-    def start(self):
+    def start(self) -> None:
         """Start broadcasting and listening for peer beacons."""
         self._stop_event.clear()
         threading.Thread(target=self._broadcast_loop, daemon=True).start()
         threading.Thread(target=self._listen_loop, daemon=True).start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop discovery threads."""
         self._stop_event.set()
 
-    def _broadcast_loop(self):
+    def _broadcast_loop(self) -> None:
         """Periodically broadcast this node's presence."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         ttl = struct.pack("b", 1)
@@ -48,7 +49,7 @@ class NodeDiscovery:
                 logging.error(f"Discovery broadcast error: {e}")
             time.sleep(self.BROADCAST_INTERVAL)
 
-    def _listen_loop(self):
+    def _listen_loop(self) -> None:
         """Listen for incoming peer beacons."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind(("", self.discovery_port))
@@ -66,6 +67,6 @@ class NodeDiscovery:
                 logging.error(f"Discovery listen error: {e}")
                 break
 
-    def get_peers(self):
+    def get_peers(self) -> List[Tuple[str, int]]:
         """Return a list of discovered (ip, port) tuples."""
         return list(self._peers)

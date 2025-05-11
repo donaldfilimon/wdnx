@@ -44,9 +44,7 @@ def scrape_url(url: str) -> dict:
 
     # If SCRAPERAPI_KEY is set, route request through ScraperAPI
     api_key = os.getenv("SCRAPERAPI_KEY")
-    target_url = (
-        f"http://api.scraperapi.com?api_key={api_key}&url={url}" if api_key else url
-    )
+    target_url = f"http://api.scraperapi.com?api_key={api_key}&url={url}" if api_key else url
 
     timeout = int(os.getenv("SCRAPER_TIMEOUT", "10"))
     response = session.get(target_url, headers=headers, timeout=timeout)

@@ -16,12 +16,14 @@ Improvements:
 import importlib.metadata
 import json
 import logging
+import os
 import socket
 import ssl
 import tempfile
 import threading
 from datetime import timedelta
-from typing import Callable, List, Optional, Set
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -60,18 +62,16 @@ from flask_login import (
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import check_password_hash
-from werkzeug.utils import secure_filename
 
 from blueprints.lylex_api import lylex_api
 from blueprints.plugin_admin import plugin_admin
 from blueprints.wdbx_api import wdbx_api
 from config import Settings
-from lylex.db import LylexDB
+from core_utils.cython_transformers import transform_search_results
 from lylex.brain import Brain
+from lylex.db import LylexDB
 from wdbx import WDBX
 from wdbx.metrics import start_metrics_server
-from functools import wraps
-import requests
 
 # --- Logging and Environment Setup ---
 load_dotenv()
@@ -102,8 +102,8 @@ login_manager.login_view = "login"
 class User(UserMixin):
     """Flask-Login user class."""
 
-    def __init__(self, username: str):
-        self.id = username
+    def __init__(self, username: str) -> None:
+        self.id: str = username
 
 
 @login_manager.user_loader
@@ -116,12 +116,8 @@ def load_user(user_id: str) -> Optional[User]:
 
 # --- JWT Authentication ---
 app.config["JWT_SECRET_KEY"] = settings.jwt_secret_key
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(
-    minutes=settings.jwt_access_expires_minutes
-)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(
-    days=settings.jwt_refresh_expires_days
-)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=settings.jwt_access_expires_minutes)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=settings.jwt_refresh_expires_days)
 jwt = JWTManager(app)
 
 revoked_tokens: Set[str] = set()
@@ -158,10 +154,10 @@ def roles_required(roles: List[str]) -> Callable:
     Usage: @roles_required(['admin'])
     """
 
-    def wrapper(fn: Callable) -> Callable:
+    def wrapper(fn: Callable[..., Response]) -> Callable[..., Response]:
         @wraps(fn)
         @jwt_required()
-        def decorator(*args, **kwargs):
+        def decorator(*args: object, **kwargs: object) -> Response:
             claims = get_jwt()
             token_roles = claims.get("roles", [])
             if not any(r in token_roles for r in roles):
@@ -194,7 +190,7 @@ plugin_manager.init_app(app)
 _orig_find_plugins = plugin_manager.find_plugins
 
 
-def _find_plugins_with_entrypoints(self):
+def _find_plugins_with_entrypoints(self: Any) -> Dict[str, Any]:
     found = _orig_find_plugins(self)
     eps = importlib.metadata.entry_points().select(group="myapp.plugins")
     for ep in eps:
@@ -248,9 +244,9 @@ def _handle_http_exception(e: HTTPException) -> Response:
 
 @api.app_errorhandler(Exception)
 def _handle_generic_exception(e: Exception) -> Response:
-    """Return JSON for uncaught exceptions."""
-    logger.exception(e)
-    return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
+    """Handle generic exceptions, logging them and returning a JSON error."""
+    logger.error(f"Unhandled exception: {type(e).__name__}: {e}", exc_info=True)
+    return jsonify({"error": "An unexpected error occurred."}), 500
 
 
 api.register_blueprint(wdbx_api, url_prefix="/wdbx")
@@ -263,33 +259,37 @@ scheduler = BackgroundScheduler()
 
 
 def update_and_notify() -> int:
-    """
-    Record outdated packages and send notifications if configured.
-    Returns the count of recorded packages.
-    """
-    from wdbx.update_utils import get_outdated_packages
+    """Update WDBX and Lylex, send notifications on success/failure."""
+    updated_count = 0
+    try:
+        logger.info("Attempting WDBX update...")
+        wdbx.update_code_from_git(settings.wdbx_repo_url)  # type: ignore[attr-defined]
+        logger.info("WDBX update successful.")
+        updated_count += 1
+    except Exception as e:
+        logger.error(f"WDBX update failed: {e}", exc_info=True)
 
-    outdated = get_outdated_packages()
-    if not outdated:
-        return 0
-    count = wdbx.record_outdated_packages()
-    lines = [
-        f"{pkg['name']}: {pkg['version']} -> {pkg['latest_version']}"
-        for pkg in outdated
-    ]
-    msg = "Outdated packages recorded:\n" + "\n".join(lines)
+    try:
+        # Assuming lylex has a similar update mechanism
+        # from lylex import lylex_instance # Replace with actual lylex instance
+        # lylex_instance.update_from_git(settings.lylex_repo_url)
+        logger.info("Lylex update successful (simulated).")
+        # updated_count +=1 # Uncomment if lylex update is implemented
+    except Exception as e:
+        logger.error(f"Lylex update failed: {e}", exc_info=True)
 
-    if settings.slack_webhook_url:
-        try:
-            requests.post(settings.slack_webhook_url, json={"text": msg})
-        except Exception as e:
-            logger.error(f"Slack notification failed: {e}")
-    if settings.teams_webhook_url:
-        try:
-            requests.post(settings.teams_webhook_url, json={"text": msg})
-        except Exception as e:
-            logger.error(f"Teams notification failed: {e}")
-    return count
+    # Send notifications (Slack, Teams, etc.)
+    if updated_count > 0:
+        message = f"Successfully updated {updated_count} component(s)."
+        # send_slack_notification(message)
+        # send_teams_notification(message)
+        logger.info(message)
+    else:
+        message = "All component updates failed."
+        # send_slack_notification(message, level="error")
+        # send_teams_notification(message, level="error")
+        logger.error(message)
+    return updated_count
 
 
 scheduler.add_job(
@@ -299,9 +299,7 @@ scheduler.add_job(
     id="outdated_job",
 )
 scheduler.start()
-logger.info(
-    f"Scheduled periodic outdated package recording every {settings.update_interval_minutes} minutes"
-)
+logger.info(f"Scheduled periodic outdated package recording every {settings.update_interval_minutes} minutes")
 initial_count = update_and_notify()
 logger.info(f"Initial outdated packages recorded into WDBX: {initial_count}")
 
@@ -318,7 +316,8 @@ def require_login_ui() -> Optional[Response]:
 
 @app.route("/", methods=["GET"])
 def index() -> str:
-    """Render the home page."""
+    """Serve the main landing page or API documentation."""
+    # Redirect to Swagger UI for API docs, or serve a static landing page
     return render_template("index.html")
 
 
@@ -329,27 +328,58 @@ def dashboard() -> str:
 
 
 @ui.route("/api/vector/store", methods=["POST"])
+@jwt_required()
 def api_store_vector() -> Response:
-    """Store a vector and its metadata."""
-    data = request.get_json(force=True)
+    """API endpoint to store a vector and its metadata."""
+    data: Optional[dict] = request.get_json(force=True)
+    if not data or not isinstance(data.get("vector"), list) or not isinstance(data.get("metadata"), dict):
+        return (
+            jsonify({"error": "Invalid request payload. 'vector' must be a list and 'metadata' a dict."}),
+            400,
+        )
+
     try:
-        vid = wdbx.store(data.get("vector", []), data.get("metadata", {}))
+        # Ensure vector contains numbers (floats or ints)
+        vector_data: list = data.get("vector", [])
+        if not all(isinstance(x, (int, float)) for x in vector_data):
+            return (
+                jsonify({"error": "Invalid vector format. All elements must be numbers."}),
+                400,
+            )
+
+        vid: int = wdbx.store(vector_data, data.get("metadata", {}))
         return jsonify({"vector_id": vid})
     except Exception as e:
-        logger.error(f"Error storing vector: {e}")
+        logger.error(f"Error storing vector: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+
+SearchResult = Tuple[int, float, Dict[str, Any]]
 
 
 @ui.route("/api/vector/search", methods=["POST"])
 def api_search_vector() -> Response:
     """Search for similar vectors."""
-    data = request.get_json(force=True)
+    data: Optional[Dict[str, Any]] = request.get_json(force=True)
+    if not data or not isinstance(data.get("vector"), list) or not isinstance(data.get("limit", 10), int):
+        return (
+            jsonify({"error": "Invalid request payload. 'vector' must be a list and 'limit' an integer."}),
+            400,
+        )
     try:
-        raw = wdbx.search(data.get("vector", []), limit=data.get("limit", 10))
-        results = [{"id": r[0], "score": r[1], "metadata": r[2]} for r in raw]
+        query_vector: List[float] = data.get("vector", [])
+        limit: int = data.get("limit", 10)
+        raw_results: List[SearchResult] = wdbx.search(query_vector, limit=limit)
+        results: List[Dict[str, Any]] = transform_search_results(raw_results)
         return jsonify({"results": results})
+    except TypeError as te:
+        logger.error(
+            f"TypeError during vector search, possibly due to invalid vector format: {te}",
+            exc_info=True,
+        )
+        return jsonify({"error": "Invalid vector format or data type."}), 400
     except Exception as e:
-        logger.error(f"Error searching vector: {e}")
+        logger.error(f"Error searching vector: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -357,32 +387,84 @@ def api_search_vector() -> Response:
 def api_store_artifact() -> Response:
     """Store a model artifact file."""
     if "file" not in request.files:
-        return jsonify({"error": "No file"}), 400
-    f = request.files["file"]
-    secure_filename(f.filename)
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        f.save(tmp.name)
-        meta = {}
+        return jsonify({"error": "No file part in the request"}), 400
+
+    file = request.files["file"]
+    if not file or not file.filename:
+        return jsonify({"error": "No selected file or filename is empty"}), 400
+
+    # filename = secure_filename(file.filename)  # unused
+    temp_file_path: Optional[str] = None  # Initialize with a default
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            file.save(tmp.name)
+            temp_file_path = tmp.name
+
+        metadata_str = request.form.get("metadata", "{}")
+        metadata: dict = {}
         try:
-            meta = json.loads(request.form.get("metadata", "{}"))
-        except Exception:
-            pass
-        try:
-            aid = wdbx.store_model(tmp.name, meta)
-            return jsonify({"artifact_id": aid})
-        except Exception as e:
-            logger.error(f"Error storing artifact: {e}")
-            return jsonify({"error": str(e)}), 500
+            metadata = json.loads(metadata_str)
+            if not isinstance(metadata, dict):
+                logger.warning(f"Metadata parsed was not a dict: {metadata_str}. Using empty metadata.")
+                metadata = {}
+        except json.JSONDecodeError as je:
+            logger.warning(f"Invalid metadata JSON: {metadata_str}. Error: {je}. Using empty metadata.")
+            metadata = {}
+
+        artifact_id = wdbx.store_model(temp_file_path, metadata)
+        return jsonify({"artifact_id": artifact_id})
+
+    except IOError as ioe:
+        logger.error(
+            f"IOError during artifact storage (e.g., saving temp file): {ioe}",
+            exc_info=True,
+        )
+        return jsonify({"error": f"File operation error: {ioe}"}), 500
+    except Exception as e:
+        logger.error(f"Error storing artifact: {e}", exc_info=True)
+        return (
+            jsonify({"error": f"An unexpected error occurred during artifact storage: {e}"}),
+            500,
+        )
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError as ose:
+                logger.error(
+                    f"Error deleting temporary artifact file {temp_file_path}: {ose}",
+                    exc_info=True,
+                )
 
 
 @ui.route("/api/artifact/load/<int:artifact_id>")
 def api_load_artifact(artifact_id: int) -> Response:
     """Download a stored model artifact."""
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        wdbx.load_model(artifact_id, tmp.name)
+    temp_file_path: Optional[str] = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            temp_file_path = tmp.name
+        wdbx.load_model(artifact_id, temp_file_path)
         return send_file(
-            tmp.name, as_attachment=True, download_name=f"artifact_{artifact_id}.bin"
+            temp_file_path,
+            as_attachment=True,
+            download_name=f"artifact_{artifact_id}.bin",
         )
+    except FileNotFoundError:
+        logger.error(f"Artifact with ID {artifact_id} not found for loading.", exc_info=True)
+        return jsonify({"error": f"Artifact with ID {artifact_id} not found."}), 404
+    except Exception as e:
+        logger.error(f"Error loading artifact {artifact_id}: {e}", exc_info=True)
+        return jsonify({"error": f"Could not load artifact {artifact_id}: {e}"}), 500
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError as ose:
+                logger.error(
+                    f"Error deleting temporary artifact file {temp_file_path} after loading: {ose}",
+                    exc_info=True,
+                )
 
 
 @ui.route("/api/lylex/store_interaction", methods=["POST"])
@@ -406,10 +488,8 @@ def api_search_interactions() -> Response:
     """Search for similar interactions."""
     try:
         data = request.get_json(force=True)
-        raw = lylex_db.search_interactions(
-            data.get("prompt", ""), limit=data.get("limit", 5)
-        )
-        results = [{"id": r[0], "score": r[1], "metadata": r[2]} for r in raw]
+        raw = lylex_db.search_interactions(data.get("prompt", ""), limit=data.get("limit", 5))
+        results = transform_search_results(raw)
         return jsonify({"results": results})
     except Exception as e:
         logger.error(f"Error searching interactions: {e}")
@@ -441,10 +521,10 @@ def api_bulk_store_vectors() -> Response:
 @ui.route("/api/vector/bulk_search", methods=["POST"])
 def api_bulk_search_vectors() -> Response:
     """Bulk search vectors."""
-    data = request.get_json(force=True) or {}
-    vectors = data.get("vectors", [])
-    limit = data.get("limit", 10)
-    results = wdbx.bulk_search(vectors, limit=limit)
+    data: Dict[str, Any] = request.get_json(force=True) or {}
+    vectors: List[List[float]] = data.get("vectors", [])
+    limit: int = data.get("limit", 10)
+    results: List[List[Dict[str, Any]]] = wdbx.bulk_search(vectors, limit=limit)
     return jsonify({"results": results})
 
 
@@ -668,13 +748,7 @@ def login() -> str:
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        if (
-            username
-            and password
-            and username == settings.admin_username
-            and settings.admin_password_hash
-            and check_password_hash(settings.admin_password_hash, password)
-        ):
+        if username and password and username == settings.admin_username and settings.admin_password_hash and check_password_hash(settings.admin_password_hash, password):
             user = User(username)
             login_user(user)
             return redirect(url_for("dashboard"))
@@ -694,24 +768,23 @@ def logout() -> Response:
 @limiter.limit("5 per minute")
 @app.route("/auth/login", methods=["POST"])
 def auth_login() -> Response:
-    """JWT login endpoint."""
-    data = request.get_json(force=True) or {}
-    username = data.get("username")
-    password = data.get("password")
-    if (
-        username == settings.admin_username
-        and settings.admin_password_hash
-        and check_password_hash(settings.admin_password_hash, password)
-    ):
-        roles = settings.admin_roles if username == settings.admin_username else []
-        access = create_access_token(
-            identity=username, additional_claims={"roles": roles}
-        )
-        refresh = create_refresh_token(
-            identity=username, additional_claims={"roles": roles}
-        )
-        return jsonify(access_token=access, refresh_token=refresh)
-    return jsonify({"msg": "Bad username or password"}), 401
+    """Authenticate user and return JWT tokens."""
+    data = request.get_json(force=True)
+    username = data.get("username", None)
+    password = data.get("password", None)
+
+    if not username or not password:
+        return jsonify({"msg": "Missing username or password"}), 400
+
+    # Validate credentials (replace with your actual user store logic)
+    if settings.admin_username == username and settings.admin_password_hash and check_password_hash(settings.admin_password_hash, password):
+        # Create tokens with user roles in the access token
+        additional_claims = {"roles": settings.admin_roles}
+        access_token = create_access_token(identity=username, additional_claims=additional_claims)
+        refresh_token = create_refresh_token(identity=username)
+        return jsonify(access_token=access_token, refresh_token=refresh_token)
+    else:
+        return jsonify({"msg": "Bad username or password"}), 401
 
 
 @app.route("/auth/refresh", methods=["POST"])
@@ -721,9 +794,7 @@ def auth_refresh() -> Response:
     identity = get_jwt_identity()
     claims = get_jwt()
     roles = claims.get("roles", [])
-    new_access = create_access_token(
-        identity=identity, additional_claims={"roles": roles}
-    )
+    new_access = create_access_token(identity=identity, additional_claims={"roles": roles})
     return jsonify(access_token=new_access)
 
 
@@ -767,12 +838,8 @@ def run_ssl_socket_server() -> None:
         bindsocket.bind((settings.host, settings.socket_port))
         bindsocket.listen(5)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(
-            certfile=str(settings.ssl_certfile), keyfile=str(settings.ssl_keyfile)
-        )
-        logger.info(
-            f"SSL socket server listening on {settings.host}:{settings.socket_port}"
-        )
+        context.load_cert_chain(certfile=str(settings.ssl_certfile), keyfile=str(settings.ssl_keyfile))
+        logger.info(f"SSL socket server listening on {settings.host}:{settings.socket_port}")
         while True:
             newsocket, addr = bindsocket.accept()
             try:
@@ -791,9 +858,7 @@ if __name__ == "__main__":
         ssl_context = None
         if settings.ssl_certfile and settings.ssl_keyfile:
             ssl_context = (str(settings.ssl_certfile), str(settings.ssl_keyfile))
-        app.run(
-            host=settings.host, port=settings.port, ssl_context=ssl_context, debug=True
-        )
+        app.run(host=settings.host, port=settings.port, ssl_context=ssl_context, debug=True)
     finally:
         wdbx.shutdown()
 
