@@ -31,7 +31,7 @@ Scrapy==2.13.0
 # ML, AI, and Model Serving (CPU/GPU/Apple Silicon)
 # =========================
 transformers==4.51.3
-torch==2.7.0
+torch==2.7.1
 torchvision==0.22.0
 jax==0.6.0
 jaxlib==0.6.0
