@@ -25,7 +25,7 @@ selenium==4.32.0
 playwright==1.52.0
 beautifulsoup4==4.13.4
 lxml==5.4.0
-Scrapy==2.13.0
+Scrapy==2.13.4
 
 # =========================
 # ML, AI, and Model Serving (CPU/GPU/Apple Silicon)
