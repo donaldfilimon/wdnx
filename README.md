@@ -24,6 +24,9 @@ WDBX is a modular Flask-based Python application and library providing a vector 
    .venv/bin/activate  # or .venv\Scripts\activate on Windows
    pip install -r requirements.txt
    ```
+
+> **Note:** `torch` and `torchvision` must be pinned as a compatible pair (see [pytorch/vision compatibility](https://github.com/pytorch/vision#installation)). This repo currently uses `torch==2.8.0` with `torchvision==0.23.0`. When bumping (e.g. to torch 2.13), also bump torchvision to the matching release (0.28).
+
 3. Copy `.env.example` to `.env` and configure environment variables.
 4. Run the Flask application:
    ```bash
