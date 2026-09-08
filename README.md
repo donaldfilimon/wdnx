@@ -24,6 +24,8 @@ WDBX is a modular Flask-based Python application and library providing a vector 
    .venv/bin/activate  # or .venv\Scripts\activate on Windows
    pip install -r requirements.txt
    ```
+
+> **Note:** `transformers` and `sentence-transformers` must be pinned as a compatible pair. This repo currently uses `transformers==5.10.1` with `sentence-transformers==5.7.0` (`sentence-transformers` ≥5.2 supports `transformers` 5.x; 4.1.0 requires `transformers<5`). When bumping either package, keep the pair installable together.
 3. Copy `.env.example` to `.env` and configure environment variables.
 4. Run the Flask application:
    ```bash
