@@ -31,6 +31,8 @@ Scrapy==2.17.0
 # ML, AI, and Model Serving (CPU/GPU/Apple Silicon)
 # =========================
 transformers==5.10.1
+# Compatible pair: transformers 5.x requires sentence-transformers>=5.2
+# (4.1.0 pins transformers<5). Keep these aligned when bumping either.
 torch==2.8.0
 # Keep torch/torchvision paired per https://github.com/pytorch/vision#installation
 # (e.g. 2.8↔0.23, 2.13↔0.28). Bump them together to avoid ResolutionImpossible.
@@ -55,7 +57,7 @@ tiktoken==0.9.0
 numpy==2.1.3
 scipy==1.15.3
 scikit-learn==1.6.1
-sentence-transformers==4.1.0
+sentence-transformers==5.7.0
 
 # =========================
 # Vision, OCR, and PDF
