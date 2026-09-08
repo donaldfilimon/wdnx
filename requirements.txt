@@ -34,7 +34,9 @@ transformers==5.10.1
 # Compatible pair: transformers 5.x requires sentence-transformers>=5.2
 # (4.1.0 pins transformers<5). Keep these aligned when bumping either.
 torch==2.8.0
-torchvision==0.22.0
+# Keep torch/torchvision paired per https://github.com/pytorch/vision#installation
+# (e.g. 2.8↔0.23, 2.13↔0.28). Bump them together to avoid ResolutionImpossible.
+torchvision==0.23.0
 jax==0.6.0
 jaxlib==0.6.0
 # For Apple Silicon (Mac) ML acceleration

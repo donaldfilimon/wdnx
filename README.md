@@ -25,7 +25,8 @@ WDBX is a modular Flask-based Python application and library providing a vector 
    pip install -r requirements.txt
    ```
 
-> **Note:** `transformers` and `sentence-transformers` must be pinned as a compatible pair. This repo currently uses `transformers==5.10.1` with `sentence-transformers==5.7.0` (`sentence-transformers` ≥5.2 supports `transformers` 5.x; 4.1.0 requires `transformers<5`). When bumping either package, keep the pair installable together.
+> **Note:** `torch` and `torchvision` must be pinned as a compatible pair (see [pytorch/vision compatibility](https://github.com/pytorch/vision#installation)). This repo currently uses `torch==2.8.0` with `torchvision==0.23.0`. When bumping (e.g. to torch 2.13), also bump torchvision to the matching release (0.28).
+
 3. Copy `.env.example` to `.env` and configure environment variables.
 4. Run the Flask application:
    ```bash
