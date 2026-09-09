@@ -46,7 +46,7 @@ jaxlib==0.6.0
 # torch==2.2.2+cu121  # Example: for CUDA 12.1, see https://pytorch.org/get-started/locally/
 # jaxlib==0.6.0+cuda12.cudnn89  # Example: for CUDA 12, see https://github.com/google/jax#pip-installation-gpu-cuda
 onnxruntime-gpu==1.22.0
-onnx==1.17.0
+onnx==1.22.0
 accelerate>=0.21.0
 peft==0.15.2
 optuna==4.3.0
