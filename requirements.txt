@@ -120,7 +120,7 @@ redis==6.0.0
 # =========================
 # Testing support
 # =========================
-pytest==8.3.5
+pytest==9.0.3
 pytest-cov==6.1.1
 # For type checking and linting
 mypy==1.15.0
